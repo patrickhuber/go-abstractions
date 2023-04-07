@@ -15,7 +15,7 @@ type Environment interface {
 type env struct {
 }
 
-func New() Environment {
+func NewOS() Environment {
 	return &env{}
 }
 

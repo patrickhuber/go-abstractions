@@ -66,6 +66,24 @@ func (m *memory) ReadFile(name string) ([]byte, error) {
 	return m.fs.ReadFile(name)
 }
 
+// WriteFile implements FS
+func (m *memory) WriteFile(name string, data []byte, perm os.FileMode) error {
+	file, ok := m.fs[name]
+	if !ok {
+		file = &fstest.MapFile{}
+		m.fs[name] = file
+	}
+	file.Data = data
+	file.Mode = perm
+	return nil
+}
+
+// Exists implements FS
+func (m *memory) Exists(path string) (bool, error) {
+	_, ok := m.fs[path]
+	return ok, nil
+}
+
 // Stat implements FS
 func (m *memory) Stat(name string) (fs.FileInfo, error) {
 	return m.fs.Stat(name)

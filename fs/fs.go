@@ -2,6 +2,7 @@ package fs
 
 import (
 	iofs "io/fs"
+	"os"
 )
 
 type RenameFS interface {
@@ -14,10 +15,20 @@ type RemoveFS interface {
 	Remove(name string) error
 }
 
+type WriteFileFS interface {
+	WriteFile(name string, data []byte, perm os.FileMode) error
+}
+
+type ExistsFS interface {
+	Exists(path string) (bool, error)
+}
+
 type FS interface {
 	iofs.FS
 	RenameFS
 	RemoveFS
+	WriteFileFS
+	ExistsFS
 	iofs.GlobFS
 	iofs.ReadDirFS
 	iofs.ReadFileFS

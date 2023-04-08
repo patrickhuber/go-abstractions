@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"errors"
 	iofs "io/fs"
 	"os"
 )
@@ -47,9 +48,27 @@ func (*osfs) ReadFile(name string) ([]byte, error) {
 	return os.ReadFile(name)
 }
 
+// WriteFile implements FS
+func (*osfs) WriteFile(name string, data []byte, perm os.FileMode) error {
+	return os.WriteFile(name, data, perm)
+}
+
 // Stat implements FS
 func (*osfs) Stat(name string) (iofs.FileInfo, error) {
 	return os.Stat(name)
+}
+
+// Exists implements FS
+func (*osfs) Exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, err
+	}
+
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	return false, err
 }
 
 // Sub implements FS

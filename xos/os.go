@@ -11,6 +11,7 @@ type OS interface {
 	Platform() string
 	Architecture() string
 	Home() string
+	Args() []string
 }
 
 type realOS struct {
@@ -39,4 +40,8 @@ func (o *realOS) Architecture() string {
 func (o *realOS) Home() string {
 	dir, _ := os.UserHomeDir()
 	return dir
+}
+
+func (o *realOS) Args() []string {
+	return os.Args
 }

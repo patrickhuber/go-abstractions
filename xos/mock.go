@@ -26,6 +26,7 @@ type mockOS struct {
 	architecture     string
 	homeDirectory    string
 	executable       string
+	args             []string
 }
 
 type NewMockOS struct {
@@ -34,6 +35,7 @@ type NewMockOS struct {
 	Architecture     string
 	HomeDirectory    string
 	Executable       string
+	Args             []string
 }
 
 type MockOption func(*NewMockOS)
@@ -70,6 +72,7 @@ func NewMock(o *NewMockOS, options ...MockOption) OS {
 		architecture:     o.Architecture,
 		platform:         o.Platform,
 		homeDirectory:    o.HomeDirectory,
+		args:             o.Args,
 	}
 }
 
@@ -124,4 +127,8 @@ func (o *mockOS) Architecture() string {
 
 func (o *mockOS) Home() string {
 	return o.homeDirectory
+}
+
+func (o *mockOS) Args() []string {
+	return o.args
 }

@@ -1,4 +1,4 @@
-package os
+package xos
 
 const (
 	MockAmd64Architecture = "amd64"
@@ -7,17 +7,14 @@ const (
 	MockWindowsPlatform         = "windows"
 	MockWindowsWorkingDirectory = "c:\\working"
 	MockWindowsHomeDirectory    = "c:\\users\\fake"
-	MockWindowsExecutable       = "c:\\ProgramData\\test\\fake.exe"
 
 	MockLinuxPlatform         = "linux"
 	MockLinuxWorkingDirectory = "/working"
 	MockLinuxHomeDirectory    = "/home/fake"
-	MockLinuxExecutable       = "/opt/test/fake"
 
 	MockDarwinPlatform         = "darwin"
 	MockDarwinHomeDirectory    = MockLinuxHomeDirectory
 	MockDarwinWorkingDirectory = MockLinuxWorkingDirectory
-	MockDarwinExecutable       = MockLinuxExecutable
 )
 
 type mockOS struct {
@@ -25,96 +22,75 @@ type mockOS struct {
 	platform         string
 	architecture     string
 	homeDirectory    string
-	executable       string
-	args             []string
 }
 
-type NewMockOS struct {
-	WorkingDirectory string
-	Platform         string
-	Architecture     string
-	HomeDirectory    string
-	Executable       string
-	Args             []string
-}
-
-type MockOption func(*NewMockOS)
-
-func WithExecutable(exectuable string) MockOption {
-	return func(o *NewMockOS) {
-		o.Executable = exectuable
-	}
-}
+type MockOption func(*mockOS)
 
 func WithHomeDirectory(homeDirectory string) MockOption {
-	return func(o *NewMockOS) {
-		o.HomeDirectory = homeDirectory
+	return func(o *mockOS) {
+		o.homeDirectory = homeDirectory
 	}
 }
 
 func WithArchitecture(architecture string) MockOption {
-	return func(o *NewMockOS) {
-		o.Architecture = architecture
+	return func(o *mockOS) {
+		o.architecture = architecture
 	}
 }
 
 func WithWorkingDirectory(workingDirectory string) MockOption {
-	return func(o *NewMockOS) {
-		o.WorkingDirectory = workingDirectory
+	return func(o *mockOS) {
+		o.workingDirectory = workingDirectory
+	}
+}
+
+func WithPlatform(platform string) MockOption {
+	return func(o *mockOS) {
+		o.platform = platform
 	}
 }
 
 // NewMock creates a new OS from the mock OS request
-func NewMock(o *NewMockOS, options ...MockOption) OS {
-	return &mockOS{
-		executable:       o.Executable,
-		workingDirectory: o.WorkingDirectory,
-		architecture:     o.Architecture,
-		platform:         o.Platform,
-		homeDirectory:    o.HomeDirectory,
-		args:             o.Args,
+func NewMock(options ...MockOption) OS {
+	o := &mockOS{}
+	for _, option := range options {
+		option(o)
 	}
+	return o
 }
 
 func NewLinuxMock(options ...MockOption) OS {
-	mock := &NewMockOS{
-		Executable:       MockLinuxExecutable,
-		WorkingDirectory: MockLinuxWorkingDirectory,
-		Platform:         MockLinuxPlatform,
-		HomeDirectory:    MockLinuxHomeDirectory,
-		Architecture:     MockAmd64Architecture,
-	}
-	return NewMock(mock, options...)
+	options = append([]MockOption{
+		WithArchitecture(MockAmd64Architecture),
+		WithWorkingDirectory(MockLinuxWorkingDirectory),
+		WithPlatform(MockLinuxPlatform),
+		WithHomeDirectory(MockLinuxHomeDirectory),
+	}, options...)
+	return NewMock(options...)
 }
 
 func NewDarwinMock(options ...MockOption) OS {
-	mock := &NewMockOS{
-		Executable:       MockDarwinExecutable,
-		WorkingDirectory: MockDarwinWorkingDirectory,
-		Platform:         MockDarwinPlatform,
-		HomeDirectory:    MockDarwinHomeDirectory,
-		Architecture:     MockAmd64Architecture,
-	}
-	return NewMock(mock, options...)
+	options = append([]MockOption{
+		WithArchitecture(MockAmd64Architecture),
+		WithWorkingDirectory(MockDarwinWorkingDirectory),
+		WithPlatform(MockDarwinPlatform),
+		WithHomeDirectory(MockDarwinHomeDirectory),
+	}, options...)
+	return NewMock(options...)
 }
 
 func NewWindowsMock(options ...MockOption) OS {
-	mock := &NewMockOS{
-		Executable:       MockWindowsExecutable,
-		WorkingDirectory: MockWindowsWorkingDirectory,
-		Platform:         MockWindowsPlatform,
-		HomeDirectory:    MockWindowsHomeDirectory,
-		Architecture:     MockAmd64Architecture,
-	}
-	return NewMock(mock, options...)
+	options = append([]MockOption{
+		WithArchitecture(MockAmd64Architecture),
+		WithWorkingDirectory(MockWindowsWorkingDirectory),
+		WithPlatform(MockWindowsPlatform),
+		WithHomeDirectory(MockWindowsHomeDirectory),
+	}, options...)
+	return NewMock(options...)
 }
 
 func (o *mockOS) WorkingDirectory() (string, error) {
 	return o.workingDirectory, nil
-}
-
-func (o *mockOS) Executable() (string, error) {
-	return o.executable, nil
 }
 
 func (o *mockOS) Platform() string {
@@ -127,8 +103,4 @@ func (o *mockOS) Architecture() string {
 
 func (o *mockOS) Home() string {
 	return o.homeDirectory
-}
-
-func (o *mockOS) Args() []string {
-	return o.args
 }

@@ -1,4 +1,5 @@
-package os
+// Package xos provides abstraction of the os package. Any os function that doesn't have a better fit lands in this package
+package xos
 
 import (
 	"os"
@@ -7,11 +8,9 @@ import (
 
 type OS interface {
 	WorkingDirectory() (string, error)
-	Executable() (string, error)
 	Platform() string
 	Architecture() string
 	Home() string
-	Args() []string
 }
 
 type realOS struct {
@@ -40,8 +39,4 @@ func (o *realOS) Architecture() string {
 func (o *realOS) Home() string {
 	dir, _ := os.UserHomeDir()
 	return dir
-}
-
-func (o *realOS) Args() []string {
-	return os.Args
 }

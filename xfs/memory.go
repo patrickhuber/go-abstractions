@@ -63,7 +63,7 @@ func (m *memory) Remove(path string) error {
 // RemoveAll implements FS
 func (m *memory) RemoveAll(path string) error {
 	paths := []string{}
-	for p, _ := range m.fs {
+	for p := range m.fs {
 		if strings.HasPrefix(p, path) {
 			paths = append(paths, p)
 		}
@@ -183,14 +183,4 @@ func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
 
 func errNotExist(path string) error {
 	return fmt.Errorf("'%s' %w", path, fs.ErrNotExist)
-}
-
-func volumeName(v xfilepath.Volume, sep string) string {
-	var builder strings.Builder
-	builder.WriteString(sep)
-	builder.WriteString(sep)
-	builder.WriteString(v.Host)
-	builder.WriteString(sep)
-	builder.WriteString(v.Share)
-	return builder.String()
 }

@@ -5,14 +5,14 @@ A go abstractions library for difficult to test functions in stdlib
 ## using
 
 ```bash
-go get github.com/patrickhuber/go-abstractions
+go get github.com/patrickhuber/go-xplat
 ```
 
 ### os
 
 ```go
 import(
-  "github.com/patrickhuber/go-abstractions/os"
+  "github.com/patrickhuber/go-xplat/os"
 )
 func main(){
   o := os.New()
@@ -24,7 +24,7 @@ func main(){
 
 ```go
 import(
-  "github.com/patrickhuber/go-abstractions/env"
+  "github.com/patrickhuber/go-xplat/env"
 )
 func main(){
   e := env.NewOS()
@@ -36,7 +36,7 @@ func main(){
 
 ```go
 import(
-  "github.com/patrickhuber/go-abstractions/console"
+  "github.com/patrickhuber/go-xplat/console"
 )  
 func main(){
   c := console.NewOS()

@@ -1,4 +1,4 @@
-package env
+package xenv
 
 type memory struct {
 	data map[string]string

@@ -1,4 +1,4 @@
-package fs
+package xfs
 
 import (
 	"errors"
@@ -74,4 +74,14 @@ func (*osfs) Exists(path string) (bool, error) {
 // Sub implements FS
 func (o *osfs) Sub(dir string) (iofs.FS, error) {
 	return iofs.Sub(o, dir)
+}
+
+// Mkdir implements MakeDirFS
+func (o *osfs) Mkdir(path string, perm iofs.FileMode) error {
+	return os.Mkdir(path, perm)
+}
+
+// MkdirAll implements MakeDirFS
+func (o *osfs) MkdirAll(path string, perm iofs.FileMode) error {
+	return os.MkdirAll(path, perm)
 }

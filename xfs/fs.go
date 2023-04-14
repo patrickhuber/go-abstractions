@@ -1,8 +1,7 @@
-package fs
+package xfs
 
 import (
 	iofs "io/fs"
-	"os"
 )
 
 type RenameFS interface {
@@ -16,11 +15,16 @@ type RemoveFS interface {
 }
 
 type WriteFileFS interface {
-	WriteFile(name string, data []byte, perm os.FileMode) error
+	WriteFile(name string, data []byte, perm iofs.FileMode) error
 }
 
 type ExistsFS interface {
 	Exists(path string) (bool, error)
+}
+
+type MakeDirFS interface {
+	Mkdir(path string, perm iofs.FileMode) error
+	MkdirAll(path string, perm iofs.FileMode) error
 }
 
 type FS interface {
@@ -30,9 +34,10 @@ type FS interface {
 	WriteFileFS
 	ExistsFS
 	iofs.GlobFS
-	iofs.ReadDirFS
 	iofs.ReadFileFS
 	iofs.ReadFileFS
 	iofs.StatFS
 	iofs.SubFS
+	iofs.ReadDirFS
+	MakeDirFS
 }

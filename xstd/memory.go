@@ -1,4 +1,4 @@
-package console
+package standard
 
 import (
 	"bytes"
@@ -11,8 +11,8 @@ type memory struct {
 	err *bytes.Buffer
 }
 
-type MemoryConsole interface {
-	Console
+type MemoryStandard interface {
+	Standard
 	// OutBuffer exposes the output buffer for the memory console to enable testing
 	OutBuffer() *bytes.Buffer
 	// ErrBuffer exposes the error buffer for the memory console to enable testing
@@ -21,7 +21,7 @@ type MemoryConsole interface {
 	InBuffer() *bytes.Buffer
 }
 
-func NewMemory() MemoryConsole {
+func NewMemory() MemoryStandard {
 	return &memory{
 		in:  &bytes.Buffer{},
 		out: &bytes.Buffer{},

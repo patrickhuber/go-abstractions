@@ -1,12 +1,18 @@
 package xenv
 
+import "fmt"
+
 type memory struct {
 	data map[string]string
 }
 
 func NewMemory() Environment {
+	return NewMemoryWithMap(map[string]string{})
+}
+
+func NewMemoryWithMap(data map[string]string) Environment {
 	return &memory{
-		data: map[string]string{},
+		data: data,
 	}
 }
 
@@ -39,4 +45,12 @@ func (e *memory) Export() map[string]string {
 		clone[key] = value
 	}
 	return clone
+}
+
+func (e *memory) Environ() []string {
+	list := []string{}
+	for k, v := range e.data {
+		list = append(list, fmt.Sprintf("%s=%s", k, v))
+	}
+	return list
 }

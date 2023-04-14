@@ -10,6 +10,7 @@ type Environment interface {
 	Set(key string, value string) error
 	Lookup(key string) (string, bool)
 	Export() map[string]string
+	Environ() []string
 }
 
 type env struct {
@@ -48,6 +49,10 @@ func (e *env) Export() map[string]string {
 		value := split[1]
 
 		clone[key] = value
-	}
+	}	
 	return clone
+}
+
+func (e *env) Environ() []string {
+	return os.Environ()
 }

@@ -1,6 +1,6 @@
-# go-abstractions
+# go-xplat
 
-A go abstractions library for difficult to test functions in stdlib
+A go cross platform library with abstractions for standard lib global functions.
 
 ## using
 
@@ -8,38 +8,69 @@ A go abstractions library for difficult to test functions in stdlib
 go get github.com/patrickhuber/go-xplat
 ```
 
-### os
+### xos
 
 ```go
 import(
-  "github.com/patrickhuber/go-xplat/os"
+  "github.com/patrickhuber/go-xplat/xos"
 )
 func main(){
-  o := os.New()
+  o := xos.New()
   fmt.Println(o.Executable())
 }
 ```
 
-### env
+### xenv
 
 ```go
 import(
-  "github.com/patrickhuber/go-xplat/env"
+  "github.com/patrickhuber/go-xplat/xenv"
 )
 func main(){
-  e := env.NewOS()
+  e := xenv.NewOS()
+  e.Set("MY_ENV_VAR", "test")
   fmt.Println(e.Get("MY_ENV_VAR"))
 }
 ```
 
-### console
+```
+test
+```
+
+### xstd
 
 ```go
 import(
-  "github.com/patrickhuber/go-xplat/console"
+  "github.com/patrickhuber/go-xplat/xstd"
 )  
 func main(){
-  c := console.NewOS()
-  fmt.FPrintln(c.Out(), "hello world")
+  c := xstd.NewOS()
+  fmt.Fprintln(c.Out(), "hello world")
 }
+```
+
+```
+hello world
+```
+
+### xfilepath
+
+```go
+func main(){
+  fp, err := xfs.Parse("/some/path/to/parse")
+  if err != nil{
+    fmt.Fprintf("%w", err)
+    os.Exit(1)
+  }
+  for _, seg := range fp.Segments{
+    fmt.Println(seg)
+  }
+}
+```
+
+```
+some
+path
+to
+parse
 ```

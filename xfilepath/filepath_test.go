@@ -71,6 +71,13 @@ func TestString(t *testing.T) {
 			sep:      xfilepath.ForwardSlash,
 			expected: "gran/parent/child",
 		},
+		{
+			fp: xfilepath.FilePath{
+				Absolute: true,
+			},
+			sep:      xfilepath.ForwardSlash,
+			expected: "/",
+		},
 	}
 
 	for _, test := range tests {
@@ -81,7 +88,7 @@ func TestString(t *testing.T) {
 
 func TestRoot(t *testing.T) {
 	type test struct {
-		fp       xfilepath.FilePath
+		path     string
 		sep      xfilepath.PathSeparator
 		expected string
 	}
@@ -89,55 +96,32 @@ func TestRoot(t *testing.T) {
 	tests := []test{
 		{
 			// UNC forward slash
-			fp: xfilepath.FilePath{
-				Volume: xfilepath.Volume{
-					Host:  "host",
-					Share: "share",
-				},
-				Segments: []string{"gran", "parent", "child"},
-				Absolute: true,
-			},
+			path:     "//host/share/gran/parent/child",
 			sep:      xfilepath.ForwardSlash,
 			expected: "//host/share",
 		},
 		{
 			// UNC backward slash
-			fp: xfilepath.FilePath{
-				Volume: xfilepath.Volume{
-					Host:  "host",
-					Share: "share",
-				},
-				Segments: []string{"gran", "parent", "child"},
-				Absolute: true,
-			},
+			path:     `\\host\share\gran\parent\child`,
 			sep:      xfilepath.BackwardSlash,
 			expected: `\\host\share`,
 		},
 		{
 			// Unix Path
-			fp: xfilepath.FilePath{
-				Segments: []string{"gran", "parent", "child"},
-				Absolute: true,
-			},
+			path:     "/gran/parent/child",
 			sep:      xfilepath.ForwardSlash,
 			expected: "/",
 		},
 		{
 			// Windows Path
-			fp: xfilepath.FilePath{
-				Volume: xfilepath.Volume{
-					Drive: `c:`,
-				},
-				Segments: []string{"gran", "parent", "child"},
-				Absolute: true,
-			},
+			path:     `c:\gran\parent\child`,
 			sep:      xfilepath.BackwardSlash,
 			expected: `c:`,
 		},
 	}
 
 	for _, test := range tests {
-		actual := test.fp.Root(test.sep)
+		actual := xfilepath.Root(test.sep, test.path)
 		require.Equal(t, test.expected, actual)
 	}
 }

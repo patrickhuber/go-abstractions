@@ -27,50 +27,43 @@ const (
 	Default       PathSeparator = os.PathSeparator
 )
 
-func (fp FilePath) Root(sep PathSeparator) string {
+func (fp FilePath) IsAbs() bool {
+	return fp.Absolute
+}
 
-	switch {
-	case !fp.Absolute:
-		// Relative
-		return ""
+func (fp FilePath) IsRel() bool {
+	return !fp.Absolute
+}
 
-	case fp.Volume.Drive != "":
-		// Windows
-		var builder strings.Builder
-		builder.WriteString(fp.Volume.Drive)
-		return builder.String()
+func (fp FilePath) isWindows() bool {
+	return fp.Volume.Drive != ""
+}
 
-	case fp.Volume.Host != "":
-		// UNC
-		var builder strings.Builder
-		builder.WriteByte(byte(sep))
-		builder.WriteByte(byte(sep))
-		builder.WriteString(fp.Volume.Host)
-		builder.WriteByte(byte(sep))
-		builder.WriteString(fp.Volume.Share)
-		return builder.String()
+func (fp FilePath) isUNC() bool {
+	return fp.Volume.Host != ""
+}
+
+func (fp FilePath) Root() FilePath {
+	return FilePath{
+		Volume:   fp.Volume,
+		Absolute: fp.Absolute,
 	}
-
-	// Unix
-	var builder strings.Builder
-	builder.WriteByte(byte(sep))
-	return builder.String()
 }
 
 // VolumeName behaves similar to filepath.VolumeName in the path/filepath package
 func (fp FilePath) VolumeName(sep PathSeparator) string {
 	switch {
-	case !fp.Absolute:
+	case fp.IsRel():
 		// Relative
 		return ""
 
-	case fp.Volume.Drive != "":
+	case fp.isWindows():
 		// Windows
 		var builder strings.Builder
 		builder.WriteString(fp.Volume.Drive)
 		return builder.String()
 
-	case fp.Volume.Host != "":
+	case fp.isUNC():
 		// UNC
 		var builder strings.Builder
 		builder.WriteByte(byte(sep))
@@ -86,22 +79,29 @@ func (fp FilePath) VolumeName(sep PathSeparator) string {
 }
 
 func (fp FilePath) String(sep PathSeparator) string {
-
-	volumeName := fp.VolumeName(sep)
-
 	var builder strings.Builder
-	builder.WriteString(volumeName)
+	switch {
+
+	case fp.IsRel():
+		// we know that relative paths have no prefix
+
+	case fp.isWindows() || fp.isUNC():
+		builder.WriteString(fp.VolumeName(sep))
+		if len(fp.Segments) > 0 {
+			builder.WriteRune(rune(sep))
+		}
+
+	default:
+		// unix
+		builder.WriteRune(rune(sep))
+	}
 
 	for i, seg := range fp.Segments {
-		// print the prefix slash if the
-		// path is not relative
-		// or this is not the first element
-		if i != 0 || fp.Absolute {
-			builder.WriteByte(byte(sep))
+		if i > 0 {
+			builder.WriteRune(rune(sep))
 		}
 		builder.WriteString(seg)
 	}
-
 	return builder.String()
 }
 
@@ -115,6 +115,12 @@ func (fp FilePath) Join(other FilePath) FilePath {
 		Absolute: fp.Absolute,
 		Segments: append(fp.Segments, other.Segments...),
 	}
+}
+
+// Root is a helper function to print the root of the filepath
+func Root(sep PathSeparator, path string) string {
+	fp, _ := Parse(path)
+	return fp.Root().String(sep)
 }
 
 // Join is a helper function to combine elements into a single FilePath object

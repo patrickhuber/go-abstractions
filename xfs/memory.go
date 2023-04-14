@@ -12,13 +12,13 @@ import (
 
 type memory struct {
 	fs            fstest.MapFS
-	pathSeperator string
+	pathSeperator xfilepath.PathSeparator
 }
 
 func NewMemory(options ...MemoryOption) FS {
 	m := &memory{
 		fs:            fstest.MapFS{},
-		pathSeperator: "/",
+		pathSeperator: xfilepath.Default,
 	}
 	for _, op := range options {
 		op(m)
@@ -28,7 +28,7 @@ func NewMemory(options ...MemoryOption) FS {
 
 type MemoryOption = func(*memory)
 
-func WithPathSeperator(sep string) MemoryOption {
+func WithPathSeperator(sep xfilepath.PathSeparator) MemoryOption {
 	return func(m *memory) {
 		m.pathSeperator = sep
 	}
@@ -123,52 +123,28 @@ func (m *memory) Mkdir(path string, perm fs.FileMode) error {
 	if err != nil {
 		return err
 	}
+	accumulator := fp.Root()
 
-	root := m.root(fp)
-	if root == "" {
-		return nil
-	}
-
-	ok, err := m.Exists(root)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		if len(fp.Segments) > 0 {
-			return errNotExist(root)
-		}
-		m.fs[root] = &fstest.MapFile{
-			Mode: perm | fs.ModeDir,
-		}
-		return nil
-	}
-
-	var builder strings.Builder
-	builder.WriteString(root)
+	// check each ancestor path
 	for i := 0; i < len(fp.Segments); i++ {
-
-		seg := fp.Segments[i]
-		builder.WriteString(m.pathSeperator)
-		builder.WriteString(seg)
-		p := builder.String()
-
-		isLastSegment := i == len(fp.Segments)-1
-
-		if isLastSegment {
-			m.fs[p] = &fstest.MapFile{
-				Mode: perm | fs.ModeDir,
-			}
-			return nil
-		} else {
-			ok, err := m.Exists(p)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				return errNotExist(p)
-			}
+		currentPath := accumulator.String(m.pathSeperator)
+		_, ok := m.fs[currentPath]
+		if !ok {
+			return errNotExist(currentPath)
 		}
+		seg := fp.Segments[i]
+		fpseg, err := xfilepath.Parse(seg)
+		if err != nil {
+			return err
+		}
+		accumulator = accumulator.Join(fpseg)
 	}
+
+	// write the segment
+	m.fs[path] = &fstest.MapFile{
+		Mode: perm | fs.ModeDir,
+	}
+
 	return nil
 }
 
@@ -178,52 +154,31 @@ func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
 	if err != nil {
 		return err
 	}
+	accumulator := fp.Root()
 
-	root := m.root(fp)
-	if root == "" {
-		return nil
-	}
-
-	err = m.Mkdir(root, perm)
-	if err != nil {
-		return err
-	}
-
-	var builder strings.Builder
-	builder.WriteString(root)
-	for _, seg := range fp.Segments {
-		builder.WriteString(m.pathSeperator)
-		builder.WriteString(seg)
-		m.fs[builder.String()] = &fstest.MapFile{
-			Mode: perm | fs.ModeDir,
+	// create each ancestor path
+	for i := 0; i < len(fp.Segments); i++ {
+		currentPath := accumulator.String(m.pathSeperator)
+		_, ok := m.fs[currentPath]
+		if !ok {
+			m.fs[currentPath] = &fstest.MapFile{
+				Mode: perm | fs.ModeDir,
+			}
 		}
+		seg := fp.Segments[i]
+		fpseg, err := xfilepath.Parse(seg)
 		if err != nil {
 			return err
 		}
+		accumulator = accumulator.Join(fpseg)
+	}
+
+	// create the path
+	m.fs[path] = &fstest.MapFile{
+		Mode: perm | fs.ModeDir,
 	}
 
 	return nil
-}
-
-func (m *memory) root(fp xfilepath.FilePath) string {
-	switch {
-	case !fp.Absolute:
-		// Relative Path
-		return ""
-
-	case fp.Volume.Drive != "":
-		// windows path
-		return fp.Volume.Drive
-
-	case fp.Volume.Host != "":
-		// UNC Path
-		return volumeName(fp.Volume, m.pathSeperator)
-
-	default:
-		// unix path
-		return string(m.pathSeperator)
-	}
-
 }
 
 func errNotExist(path string) error {

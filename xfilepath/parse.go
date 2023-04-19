@@ -35,7 +35,16 @@ func parseUNCPath(path string) (FilePath, error) {
 			Share: segments[1],
 		},
 		Absolute: true,
+		Trailing: hasTrailingSlash(path),
 		Segments: ifEmptyReturnNil(segments[2:])}, nil
+}
+
+func hasTrailingSlash(path string) bool {
+	if len(path) == 0 {
+		return false
+	}
+	b := path[len(path)-1]
+	return isSlash(b)
 }
 
 func parseWindowsPath(path string) (FilePath, error) {
@@ -45,6 +54,7 @@ func parseWindowsPath(path string) (FilePath, error) {
 			Drive: path[0:2],
 		},
 		Absolute: true,
+		Trailing: hasTrailingSlash(path),
 		Segments: ifEmptyReturnNil(segments),
 	}, nil
 }
@@ -57,6 +67,7 @@ func parseUnixPath(path string) (FilePath, error) {
 	}
 	return FilePath{
 		Segments: ifEmptyReturnNil(segments),
+		Trailing: hasTrailingSlash(path),
 		Absolute: absolute,
 	}, nil
 }

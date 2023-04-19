@@ -11,6 +11,7 @@ type FilePath struct {
 	Volume   Volume
 	Absolute bool
 	Segments []string
+	Trailing bool
 }
 
 type Volume struct {
@@ -50,7 +51,18 @@ func (fp FilePath) Root() FilePath {
 	}
 }
 
-// VolumeName behaves similar to filepath.VolumeName in the path/filepath package
+func (fp FilePath) Join(other FilePath) FilePath {
+	return FilePath{
+		Volume: Volume{
+			Host:  fp.Volume.Host,
+			Share: fp.Volume.Share,
+			Drive: fp.Volume.Drive,
+		},
+		Absolute: fp.Absolute,
+		Segments: append(fp.Segments, other.Segments...),
+	}
+}
+
 func (fp FilePath) VolumeName(sep PathSeparator) string {
 	switch {
 	case fp.IsRel():
@@ -105,56 +117,18 @@ func (fp FilePath) String(sep PathSeparator) string {
 	return builder.String()
 }
 
-func (fp FilePath) Join(other FilePath) FilePath {
-	return FilePath{
-		Volume: Volume{
-			Host:  fp.Volume.Host,
-			Share: fp.Volume.Share,
-			Drive: fp.Volume.Drive,
-		},
-		Absolute: fp.Absolute,
-		Segments: append(fp.Segments, other.Segments...),
+func (fp FilePath) Clean() FilePath {
+	// if the path has no segments
+	if len(fp.Segments) == 0 {
+		// if the path is a unc path
+		return fp
 	}
-}
-
-// Root is a helper function to print the root of the filepath
-func Root(sep PathSeparator, path string) string {
-	fp, _ := Parse(path)
-	return fp.Root().String(sep)
-}
-
-// Join is a helper function to combine elements into a single FilePath object
-// it works by parsing each element and sequentially appending the elements together
-// it then calls String on the result
-func Join(sep PathSeparator, elements ...string) string {
-
-	if len(elements) == 0 {
-		return ""
-	}
-
-	var accumulator FilePath
-	first := true
-	for _, element := range elements {
-
-		// skip empty elements
-		if len(element) == 0 {
-			continue
+	for _, segment := range fp.Segments {
+		switch segment {
+		case ".":
+		case "..":
+		case "":
 		}
-
-		// call parse on the first element
-		// set the first element as the accumulator
-		if first {
-			accumulator, _ = Parse(element)
-			first = false
-			continue
-		}
-
-		// call parse on each next element
-		next, _ := Parse(element)
-
-		// and then join the accumulator to that element
-		accumulator = accumulator.Join(next)
 	}
-
-	return accumulator.String(sep)
+	return FilePath{}
 }

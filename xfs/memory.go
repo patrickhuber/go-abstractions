@@ -11,14 +11,14 @@ import (
 )
 
 type memory struct {
-	fs            fstest.MapFS
-	pathSeperator xfilepath.PathSeparator
+	fs        fstest.MapFS
+	processor xfilepath.Processor
 }
 
 func NewMemory(options ...MemoryOption) FS {
 	m := &memory{
-		fs:            fstest.MapFS{},
-		pathSeperator: xfilepath.Default,
+		fs:        fstest.MapFS{},
+		processor: xfilepath.NewDefaultProcessor(),
 	}
 	for _, op := range options {
 		op(m)
@@ -30,7 +30,7 @@ type MemoryOption = func(*memory)
 
 func WithPathSeperator(sep xfilepath.PathSeparator) MemoryOption {
 	return func(m *memory) {
-		m.pathSeperator = sep
+		m.processor = xfilepath.NewProcessorWith(sep)
 	}
 }
 
@@ -127,7 +127,7 @@ func (m *memory) Mkdir(path string, perm fs.FileMode) error {
 
 	// check each ancestor path
 	for i := 0; i < len(fp.Segments); i++ {
-		currentPath := accumulator.String(m.pathSeperator)
+		currentPath := accumulator.String(m.processor.Separator())
 		_, ok := m.fs[currentPath]
 		if !ok {
 			return errNotExist(currentPath)
@@ -158,7 +158,7 @@ func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
 
 	// create each ancestor path
 	for i := 0; i < len(fp.Segments); i++ {
-		currentPath := accumulator.String(m.pathSeperator)
+		currentPath := accumulator.String(m.processor.Separator())
 		_, ok := m.fs[currentPath]
 		if !ok {
 			m.fs[currentPath] = &fstest.MapFile{

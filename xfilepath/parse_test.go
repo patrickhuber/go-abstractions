@@ -21,6 +21,7 @@ func TestCanParse(t *testing.T) {
 		{path: "c:/", fp: xfilepath.FilePath{
 			Volume:   xfilepath.Volume{Drive: "c:"},
 			Absolute: true,
+			Trailing: true,
 		}},
 		{path: "c:/foo", fp: xfilepath.FilePath{
 			Volume:   xfilepath.Volume{Drive: "c:"},
@@ -39,6 +40,7 @@ func TestCanParse(t *testing.T) {
 		{path: "//host/share/", fp: xfilepath.FilePath{
 			Volume:   xfilepath.Volume{Host: "host", Share: "share"},
 			Absolute: true,
+			Trailing: true,
 		}},
 		{path: "//host/share/foo", fp: xfilepath.FilePath{
 			Volume:   xfilepath.Volume{Host: "host", Share: "share"},
@@ -52,6 +54,7 @@ func TestCanParse(t *testing.T) {
 		{path: `\\host\share\`, fp: xfilepath.FilePath{
 			Volume:   xfilepath.Volume{Host: "host", Share: "share"},
 			Absolute: true,
+			Trailing: true,
 		}},
 		{path: `\\host\share\foo`, fp: xfilepath.FilePath{
 			Volume:   xfilepath.Volume{Host: "host", Share: "share"},
@@ -69,6 +72,7 @@ func TestCanParse(t *testing.T) {
 
 		{path: "/", fp: xfilepath.FilePath{
 			Absolute: true,
+			Trailing: true,
 		}},
 		{path: "a/b", fp: xfilepath.FilePath{
 			Segments: []string{"a", "b"},
@@ -77,10 +81,12 @@ func TestCanParse(t *testing.T) {
 		{path: "a/b/", fp: xfilepath.FilePath{
 			Segments: []string{"a", "b"},
 			Absolute: false,
+			Trailing: true,
 		}},
 		{path: "a/", fp: xfilepath.FilePath{
 			Segments: []string{"a"},
 			Absolute: false,
+			Trailing: true,
 		}},
 		{path: "a", fp: xfilepath.FilePath{
 			Segments: []string{"a"},

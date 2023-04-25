@@ -19,8 +19,8 @@ func TestString(t *testing.T) {
 			// UNC share forward slash
 			fp: xfilepath.FilePath{
 				Volume: xfilepath.Volume{
-					Host:  "host",
-					Share: "share",
+					Host:  xfilepath.NullableString{Value: "host", HasValue: true},
+					Share: xfilepath.NullableString{Value: "share", HasValue: true},
 				},
 				Segments: []string{"gran", "parent", "child"},
 				Absolute: true,
@@ -32,14 +32,27 @@ func TestString(t *testing.T) {
 			// UNC share backward slash
 			fp: xfilepath.FilePath{
 				Volume: xfilepath.Volume{
-					Host:  "host",
-					Share: "share",
+					Host:  xfilepath.NullableString{Value: "host", HasValue: true},
+					Share: xfilepath.NullableString{Value: "share", HasValue: true},
 				},
 				Segments: []string{"gran", "parent", "child"},
 				Absolute: true,
 			},
 			sep:      xfilepath.BackwardSlash,
 			expected: `\\host\share\gran\parent\child`,
+		},
+		{
+			// UNC share only root
+			fp: xfilepath.FilePath{
+				Volume: xfilepath.Volume{
+					Host:  xfilepath.NullableString{Value: "host", HasValue: true},
+					Share: xfilepath.NullableString{Value: "share", HasValue: true},
+				},
+				Segments: []string{},
+				Absolute: true,
+			},
+			sep:      xfilepath.BackwardSlash,
+			expected: `\\host\share`,
 		},
 		{
 			// Unix Path
@@ -54,7 +67,7 @@ func TestString(t *testing.T) {
 			// Windows Path
 			fp: xfilepath.FilePath{
 				Volume: xfilepath.Volume{
-					Drive: `c:`,
+					Drive: xfilepath.NullableString{Value: `c:`, HasValue: true},
 				},
 				Segments: []string{"gran", "parent", "child"},
 				Absolute: true,
@@ -72,16 +85,28 @@ func TestString(t *testing.T) {
 			expected: "gran/parent/child",
 		},
 		{
+			// root unix path
 			fp: xfilepath.FilePath{
 				Absolute: true,
 			},
 			sep:      xfilepath.ForwardSlash,
 			expected: "/",
 		},
+		{
+			// root windows path
+			fp: xfilepath.FilePath{
+				Volume: xfilepath.Volume{
+					Drive: xfilepath.NullableString{Value: `c:`, HasValue: true},
+				},
+				Absolute: true,
+			},
+			sep:      xfilepath.BackwardSlash,
+			expected: `c:\`,
+		},
 	}
 
 	for _, test := range tests {
-		processor := xfilepath.NewProcessorWith(test.sep)
+		processor := xfilepath.NewProcessor(xfilepath.WithSeparator(test.sep))
 		actual := test.fp.String(processor.Separator())
 		require.Equal(t, test.expected, actual)
 	}
@@ -119,7 +144,7 @@ func TestVolumeName(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		processor := xfilepath.NewProcessorWith(test.sep)
+		processor := xfilepath.NewProcessor(xfilepath.WithSeparator(test.sep))
 		actual := processor.VolumeName(test.path)
 		require.Equal(t, test.expected, actual)
 	}

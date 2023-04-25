@@ -16,21 +16,24 @@ type memory struct {
 }
 
 func NewMemory(options ...MemoryOption) FS {
-	m := &memory{
-		fs:        fstest.MapFS{},
-		processor: xfilepath.NewDefaultProcessor(),
-	}
+	m := &memory{}
 	for _, op := range options {
 		op(m)
+	}
+	if m.processor == nil {
+		m.processor = xfilepath.NewProcessor()
+	}
+	if m.fs == nil {
+		m.fs = fstest.MapFS{}
 	}
 	return m
 }
 
 type MemoryOption = func(*memory)
 
-func WithPathSeperator(sep xfilepath.PathSeparator) MemoryOption {
+func WithProcessor(processor xfilepath.Processor) MemoryOption {
 	return func(m *memory) {
-		m.processor = xfilepath.NewProcessorWith(sep)
+		m.processor = processor
 	}
 }
 
@@ -119,7 +122,7 @@ func (m *memory) Sub(dir string) (fs.FS, error) {
 
 // Mkdir implements MakeDirFS
 func (m *memory) Mkdir(path string, perm fs.FileMode) error {
-	fp, err := xfilepath.Parse(path)
+	fp, err := m.processor.Parser().Parse(path)
 	if err != nil {
 		return err
 	}
@@ -133,7 +136,7 @@ func (m *memory) Mkdir(path string, perm fs.FileMode) error {
 			return errNotExist(currentPath)
 		}
 		seg := fp.Segments[i]
-		fpseg, err := xfilepath.Parse(seg)
+		fpseg, err := m.processor.Parser().Parse(seg)
 		if err != nil {
 			return err
 		}
@@ -150,7 +153,7 @@ func (m *memory) Mkdir(path string, perm fs.FileMode) error {
 
 // MkdirAll implements MakeDirFS
 func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
-	fp, err := xfilepath.Parse(path)
+	fp, err := m.processor.Parser().Parse(path)
 	if err != nil {
 		return err
 	}
@@ -166,7 +169,7 @@ func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
 			}
 		}
 		seg := fp.Segments[i]
-		fpseg, err := xfilepath.Parse(seg)
+		fpseg, err := m.processor.Parser().Parse(seg)
 		if err != nil {
 			return err
 		}

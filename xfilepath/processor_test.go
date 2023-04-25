@@ -1,9 +1,9 @@
 package xfilepath_test
 
 import (
-	"strings"
 	"testing"
 
+	"github.com/patrickhuber/go-xplat/platform"
 	"github.com/patrickhuber/go-xplat/xfilepath"
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +49,7 @@ func TestJoin(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		processor := xfilepath.NewProcessorWith(test.sep)
+		processor := xfilepath.NewProcessor(xfilepath.WithSeparator(test.sep))
 		actual := processor.Join(test.elements...)
 		require.Equal(t, test.result, actual)
 	}
@@ -85,12 +85,12 @@ func TestRoot(t *testing.T) {
 			// Windows Path
 			`c:\gran\parent\child`,
 			xfilepath.BackwardSlash,
-			`c:`,
+			`c:\`,
 		},
 	}
 
 	for _, test := range tests {
-		processor := xfilepath.NewProcessorWith(test.sep)
+		processor := xfilepath.NewProcessor(xfilepath.WithSeparator(test.sep))
 		actual := processor.Root(test.path)
 		require.Equal(t, test.expected, actual)
 	}
@@ -102,7 +102,7 @@ func TestRel(t *testing.T) {
 		target   string
 		expected string
 	}
-	tests := []test{
+	reltests := []test{
 		{"a/b", "a/b", "."},
 		{"a/b/.", "a/b", "."},
 		{"a/b", "a/b/.", "."},
@@ -137,13 +137,38 @@ func TestRel(t *testing.T) {
 		{"/../../a/b", "/../../a/b/c/d", "c/d"},
 		{".", "a/b", "a/b"},
 		{".", "..", ".."},
+
+		// can't do purely lexically
+		{"..", ".", "err"},
+		{"..", "a", "err"},
+		{"../..", "..", "err"},
+		{"a", "/a", "err"},
+		{"/a", "a", "err"},
 	}
-	for i, test := range tests {
-		processor := xfilepath.NewProcessorWith(xfilepath.ForwardSlash)
-		actual, err := processor.Rel(test.source, test.target)
-		require.Nil(t, err)
-		require.Equal(t, test.expected, actual, "failed on test %d", i)
+
+	winreltests := []test{
+		{`C:a\b\c`, `C:a/b/d`, `..\d`},
+		{`C:\`, `D:\`, `err`},
+		{`C:`, `D:`, `err`},
+		{`C:\Projects`, `c:\projects\src`, `src`},
+		{`C:\Projects`, `c:\projects`, `.`},
+		{`C:\Projects\a\..`, `c:\projects`, `.`},
+		{`\\host\share`, `\\host\share\file.txt`, `file.txt`},
 	}
+
+	run := func(tests []test, plat platform.Platform) {
+		processor := xfilepath.NewProcessorWithPlatform(plat)
+		for i, test := range tests {
+			actual, err := processor.Rel(test.source, test.target)
+			if err != nil {
+				require.Equal(t, test.expected, "err", "failed on test %d, expected error", i)
+			}
+
+			require.Equal(t, test.expected, actual, "failed on test %d", i)
+		}
+	}
+	run(reltests, platform.Linux)
+	run(winreltests, platform.Windows)
 }
 
 func TestClean(t *testing.T) {
@@ -151,7 +176,8 @@ func TestClean(t *testing.T) {
 		path     string
 		expected string
 	}
-	tests := []test{
+
+	cleantests := []test{
 		// Already clean
 		{"abc", "abc"},
 		{"abc/def", "abc/def"},
@@ -199,13 +225,16 @@ func TestClean(t *testing.T) {
 		{"abc/./../def", "def"},
 		{"abc//./../def", "def"},
 		{"abc/../../././../def", "../../def"},
+	}
 
-		// Remove leading doubled slash (these will be parsed as UNC in windows)
-		// {"//abc", "/abc"},
-		// {"///abc", "/abc"},
-		// {"//abc//", "/abc"},
+	nonwincleantests := []test{
+		// Remove leading doubled slash
+		{"//abc", "/abc"},
+		{"///abc", "/abc"},
+		{"//abc//", "/abc"},
+	}
 
-		// windows clean
+	wincleantests := []test{
 		{`c:`, `c:.`},
 		{`c:\`, `c:\`},
 		{`c:\abc`, `c:\abc`},
@@ -240,13 +269,16 @@ func TestClean(t *testing.T) {
 		{`foo:bar`, `foo:bar`},
 	}
 
-	for i, test := range tests {
-		sep := xfilepath.BackwardSlash
-		if strings.Contains(test.expected, "/") {
-			sep = xfilepath.ForwardSlash
+	run := func(tests []test, name string, plat platform.Platform) {
+		processor := xfilepath.NewProcessorWithPlatform(plat)
+		for i, test := range tests {
+			actual := processor.Clean(test.path)
+			require.Equal(t, test.expected, actual,
+				"%s test failed: %d given '%s' expected '%s' actual '%s'", name, i, test.path, test.expected, actual)
 		}
-		processor := xfilepath.NewProcessorWith(sep)
-		actual := processor.Clean(test.path)
-		require.Equal(t, test.expected, actual, "failed on test %d", i)
 	}
+
+	run(cleantests, "cleantests", platform.Linux)
+	run(nonwincleantests, "nonwincleantests", platform.Linux)
+	run(wincleantests, "wincleantests", platform.Windows)
 }

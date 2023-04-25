@@ -1,9 +1,9 @@
 package xfilepath
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
+	"regexp"
+
+	"github.com/patrickhuber/go-xplat/platform"
 )
 
 type JoinPath interface {
@@ -33,20 +33,52 @@ type Processor interface {
 	RootPath
 	VolumeNamePath
 	Separator() PathSeparator
+	Parser() Parser
 }
 
 type processor struct {
-	sep PathSeparator
+	platform platform.Platform
+	sep      PathSeparator
+	parser   Parser
 }
 
-func NewDefaultProcessor() Processor {
-	return NewProcessorWith(Default)
-}
+type ProcessorOption func(p *processor)
 
-func NewProcessorWith(sep PathSeparator) Processor {
-	return &processor{
-		sep: sep,
+func WithParser(parser Parser) ProcessorOption {
+	return func(p *processor) {
+		p.parser = parser
 	}
+}
+
+func WithSeparator(separator PathSeparator) ProcessorOption {
+	return func(p *processor) {
+		p.sep = separator
+	}
+}
+
+// NewProcessor creates a processor with the default platform and then applies the options
+func NewProcessor(options ...ProcessorOption) Processor {
+	return NewProcessorWithPlatform(platform.Default(), options...)
+}
+
+// NewProcessorWithPlatform creates a platform specific processor and then applies the given options
+func NewProcessorWithPlatform(plat platform.Platform, options ...ProcessorOption) Processor {
+	p := &processor{
+		parser:   NewParserWithPlatform(plat),
+		platform: plat,
+	}
+
+	if plat.IsUnix() {
+		p.sep = ForwardSlash
+	} else {
+		p.sep = BackwardSlash
+	}
+
+	for _, option := range options {
+		option(p)
+	}
+
+	return p
 }
 
 // Join implements Processor
@@ -67,13 +99,13 @@ func (p *processor) Join(elements ...string) string {
 		// call parse on the first element
 		// set the first element as the accumulator
 		if first {
-			accumulator, _ = Parse(element)
+			accumulator, _ = p.parser.Parse(element)
 			first = false
 			continue
 		}
 
 		// call parse on each next element
-		next, _ := Parse(element)
+		next, _ := p.parser.Parse(element)
 
 		// and then join the accumulator to that element
 		accumulator = accumulator.Join(next)
@@ -84,28 +116,52 @@ func (p *processor) Join(elements ...string) string {
 
 // Rel implements Processor
 func (p *processor) Rel(sourcepath string, targetpath string) (string, error) {
-	rel, err := filepath.Rel(sourcepath, targetpath)
+
+	source, err := p.parser.Parse(sourcepath)
 	if err != nil {
 		return "", err
 	}
-	return p.Clean(rel), nil
+
+	target, err := p.parser.Parse(targetpath)
+	if err != nil {
+		return "", err
+	}
+
+	result, err := source.Rel(target)
+	if err != nil {
+		return "", err
+	}
+
+	return result.String(p.sep), nil
 }
 
 // Clean implements Processor
 func (p *processor) Clean(path string) string {
-	clean := filepath.Clean(path)
-	return strings.ReplaceAll(clean, string(os.PathSeparator), string(p.sep))
+	fp, _ := p.parser.Parse(path)
+	fp = fp.Clean()
+
+	// on the windows platform if the first segment matches the drive pattern
+	// the current directory needs to be added in the front
+	if p.platform == platform.Windows && fp.IsRel() && len(fp.Segments) > 0 {
+		matched, err := regexp.MatchString(`^[a-zA-Z][:]`, fp.Segments[0])
+		if (err == nil) && matched {
+			fp.Segments = append([]string{CurrentDirectory}, fp.Segments...)
+		}
+	}
+
+	cleaned := fp.String(p.sep)
+	return cleaned
 }
 
 // Root is a helper function to print the root of the filepath
 func (p *processor) Root(path string) string {
-	fp, _ := Parse(path)
+	fp, _ := p.parser.Parse(path)
 	return p.String(fp.Root())
 }
 
 // VolumeName behaves similar to filepath.VolumeName in the path/filepath package
 func (p *processor) VolumeName(path string) string {
-	fp, _ := Parse(path)
+	fp, _ := p.parser.Parse(path)
 	return fp.VolumeName(p.sep)
 }
 
@@ -115,4 +171,8 @@ func (p *processor) String(fp FilePath) string {
 
 func (p *processor) Separator() PathSeparator {
 	return p.sep
+}
+
+func (p *processor) Parser() Parser {
+	return p.parser
 }

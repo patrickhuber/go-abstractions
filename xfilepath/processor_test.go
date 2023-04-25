@@ -156,19 +156,25 @@ func TestRel(t *testing.T) {
 		{`\\host\share`, `\\host\share\file.txt`, `file.txt`},
 	}
 
-	run := func(tests []test, plat platform.Platform) {
+	run := func(tests []test, name string, plat platform.Platform) {
 		processor := xfilepath.NewProcessorWithPlatform(plat)
 		for i, test := range tests {
+
 			actual, err := processor.Rel(test.source, test.target)
+
 			if err != nil {
-				require.Equal(t, test.expected, "err", "failed on test %d, expected error", i)
+				require.Equal(t, test.expected, "err",
+					"test %s[%d] failed. source '%s' target '%s' expected 'err' actual '%s'",
+					name, i, test.source, test.target, actual)
 			}
 
-			require.Equal(t, test.expected, actual, "failed on test %d", i)
+			require.Equal(t, test.expected, actual,
+				"test %s[%d] failed. source '%s' target '%s' expected '%s' actual '%s'",
+				name, i, test.source, test.target, test.expected, actual)
 		}
 	}
-	run(reltests, platform.Linux)
-	run(winreltests, platform.Windows)
+	run(reltests, "reltests", platform.Linux)
+	run(winreltests, "winreltests", platform.Windows)
 }
 
 func TestClean(t *testing.T) {
@@ -258,8 +264,10 @@ func TestClean(t *testing.T) {
 		{`.\c:\foo`, `.\c:\foo`},
 		{`.\c:foo`, `.\c:foo`},
 		{`//abc`, `\\abc`},
+		{`//abc/`, `\\abc\`},
 		{`///abc`, `\\\abc`},
 		{`//abc//`, `\\abc\\`},
+		{`///abc/`, `\\\abc\`},
 
 		// Don't allow cleaning to move an element with a colon to the start of the path.
 		{`a/../c:`, `.\c:`},

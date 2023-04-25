@@ -81,15 +81,6 @@ func (p *parser) ListSeparator() PathListSeparator {
 	return p.listSeparator
 }
 
-func (p *parser) cut(path string) (before string, found bool, after string) {
-	for i := 0; i < len(path); i++ {
-		if p.isSeparator(path[i]) {
-			return path[0:i], true, path[i+1:]
-		}
-	}
-	return path, false, ""
-}
-
 func (p *parser) Parse(path string) (FilePath, error) {
 	// if it is a UNC path
 	if p.isUNCPath(path) {
@@ -156,7 +147,16 @@ func (p *parser) parseUNCPath(path string) (FilePath, error) {
 }
 
 func (p *parser) parseWindowsPath(path string) (FilePath, error) {
+	// remove the drive letter from the path and get the path segments
 	segments := p.split(path[2:])
+
+	// remove the preceeding empty space
+	if len(segments) > 1 {
+		if segments[0] == "" {
+			segments = segments[1:]
+		}
+	}
+
 	return FilePath{
 		Volume: Volume{
 			Drive: NullableString{Value: path[0:2], HasValue: true},
@@ -172,6 +172,19 @@ func (p *parser) parseUnixPath(path string) (FilePath, error) {
 	if len(path) > 0 {
 		absolute = p.isSeparator(path[0])
 	}
+
+	// remove the preceeding empty space in absoluate paths
+	if len(segments) > 1 && absolute {
+		if segments[0] == "" {
+			segments = segments[1:]
+		}
+	}
+
+	// special case for "/"
+	if len(segments) == 1 && absolute && segments[0] == "" {
+		segments = nil
+	}
+
 	return FilePath{
 		Segments: ifEmptyReturnNil(segments),
 		Absolute: absolute,
@@ -204,34 +217,25 @@ func (p *parser) isDrive(path string) bool {
 	return path[1] == ':'
 }
 
-// '/' returns {}
-// '/something' returns {"something"}
-// 'something/' returns {"something"}
-// 'something' returns {"something"}
+// Split splits a path into segments preserving leading and trailing empty segments
+//
+// given "" returns nil
+// given "/" returns ["", ""]
+// given "something/" returns ["something", ""]
+// given "/something" returns ["", "something"]
+// given "something" returns ["something"]
+// given "/something/" returns ["", "something", ""]
 func (p *parser) split(path string) []string {
-	var segments []string
 
 	// empty string
+	var segments []string
 	if len(path) == 0 {
 		return segments
 	}
 
-	// remove leading slash
-	if p.isSeparator(path[0]) {
-		if len(path) == 1 {
-			return segments
-		}
-		path = path[1:]
-	}
-
+	// split will contain the list of segments and empty segments where two separators are adjacent
 	for {
 		before, ok, after := p.cut(path)
-
-		// case "/"
-		if before == "" && after == "" {
-			return segments
-		}
-
 		segments = append(segments, before)
 		if !ok {
 			break
@@ -239,6 +243,19 @@ func (p *parser) split(path string) []string {
 		path = after
 	}
 	return segments
+}
+
+// cut cuts the path at the first separator occurence
+// before contains the string before the first separator
+// found returns true if a separator was found, false otherwise
+// after contains the string after the first separator
+func (p *parser) cut(path string) (before string, found bool, after string) {
+	for i := 0; i < len(path); i++ {
+		if p.isSeparator(path[i]) {
+			return path[0:i], true, path[i+1:]
+		}
+	}
+	return path, false, ""
 }
 
 func (p *parser) isSeparator(b byte) bool {

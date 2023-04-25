@@ -55,6 +55,30 @@ func TestString(t *testing.T) {
 			expected: `\\host\share`,
 		},
 		{
+			// UNC share without share name and trailing slash
+			fp: xfilepath.FilePath{
+				Volume: xfilepath.Volume{
+					Host:  xfilepath.NullableString{Value: "abc", HasValue: true},
+					Share: xfilepath.NullableString{Value: "", HasValue: true},
+				},
+				Segments: []string{""},
+				Absolute: true,
+			},
+			sep:      xfilepath.BackwardSlash,
+			expected: `\\abc\\`,
+		},
+		{
+			// UNC share without share name and trailing slash
+			fp: xfilepath.FilePath{
+				Volume: xfilepath.Volume{
+					Host: xfilepath.NullableString{Value: "abc", HasValue: true},
+				},
+				Absolute: true,
+			},
+			sep:      xfilepath.BackwardSlash,
+			expected: `\\abc`,
+		},
+		{
 			// Unix Path
 			fp: xfilepath.FilePath{
 				Segments: []string{"gran", "parent", "child"},
@@ -105,10 +129,10 @@ func TestString(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
 		processor := xfilepath.NewProcessor(xfilepath.WithSeparator(test.sep))
 		actual := test.fp.String(processor.Separator())
-		require.Equal(t, test.expected, actual)
+		require.Equal(t, test.expected, actual, "failed test at [%d]", i)
 	}
 }
 

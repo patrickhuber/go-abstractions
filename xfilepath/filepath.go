@@ -88,18 +88,7 @@ func (fp FilePath) VolumeName(sep PathSeparator) string {
 		return builder.String()
 
 	case fp.isUNC():
-		// UNC
-		var builder strings.Builder
-		builder.WriteByte(byte(sep))
-		builder.WriteByte(byte(sep))
-		if fp.Volume.Host.HasValue {
-			builder.WriteString(fp.Volume.Host.Value)
-			builder.WriteByte(byte(sep))
-		}
-		if fp.Volume.Share.HasValue {
-			builder.WriteString(fp.Volume.Share.Value)
-		}
-		return builder.String()
+		return fp.uncVolumeName(sep)
 
 	case fp.IsRel():
 		// Relative
@@ -108,6 +97,27 @@ func (fp FilePath) VolumeName(sep PathSeparator) string {
 
 	// Unix
 	return ""
+}
+
+func (fp FilePath) uncVolumeName(sep PathSeparator) string {
+	var builder strings.Builder
+
+	// write //
+	builder.WriteByte(byte(sep))
+	builder.WriteByte(byte(sep))
+
+	// write the hostname
+	if fp.Volume.Host.HasValue {
+		builder.WriteString(fp.Volume.Host.Value)
+	}
+
+	// write separator and share if share exists
+	if fp.Volume.Share.HasValue {
+		builder.WriteByte(byte(sep))
+		builder.WriteString(fp.Volume.Share.Value)
+	}
+
+	return builder.String()
 }
 
 func (fp FilePath) String(sep PathSeparator) string {
@@ -155,6 +165,11 @@ func (fp FilePath) clean() FilePath {
 		return fp
 	}
 
+	// unc paths with one empty segment are already clean
+	if fp.isUNC() && len(fp.Segments) == 1 && fp.Segments[0] == "" {
+		return fp
+	}
+
 	s := stack.New[string]()
 	for _, segment := range fp.Segments {
 
@@ -185,22 +200,68 @@ func (fp FilePath) clean() FilePath {
 			s.Push(segment)
 		}
 	}
-	var segments []string
+
+	return FilePath{
+		Volume:   fp.Volume,
+		Absolute: fp.Absolute,
+		Segments: toSlice(s),
+	}
+}
+
+func toSlice[T any](s stack.Stack[T]) []T {
+	var slice []T
 	for {
 		if s.Length() == 0 {
 			break
 		}
 		item := s.Pop()
-		segments = append([]string{item}, segments...)
+		slice = append([]T{item}, slice...)
 	}
-
-	return FilePath{
-		Volume:   fp.Volume,
-		Absolute: fp.Absolute,
-		Segments: segments,
-	}
+	return slice
 }
 
 func (fp FilePath) Rel(other FilePath) (FilePath, error) {
+	source := fp.Clean()
+	target := other.Clean()
+
+	// if paths are equal, return CurrentDirectory string
+	if source.Equal(target) {
+		return FilePath{
+			Segments: []string{CurrentDirectory},
+		}, nil
+	}
+
+	// paths must share common prefix
+	
 	return FilePath{}, fmt.Errorf("not implemented")
+}
+
+func (fp FilePath) Equal(other FilePath) bool {
+	if !fp.Volume.Equal(other.Volume) {
+		return false
+	}
+	if len(fp.Segments) != len(other.Segments) {
+		return false
+	}
+	for i := 0; i < len(fp.Segments); i++ {
+		if fp.Segments[i] != other.Segments[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (v Volume) Equal(other Volume) bool {
+	if !v.Drive.Equal(other.Drive) {
+		return false
+	}
+	if !v.Host.Equal(other.Host) {
+		return false
+	}
+	return v.Share.Equal(other.Share)
+}
+
+func (s NullableString) Equal(other NullableString) bool {
+	return s.HasValue == other.HasValue &&
+		s.Value == other.Value
 }

@@ -13,7 +13,6 @@ func TestCanParse(t *testing.T) {
 		path string
 		fp   xfilepath.FilePath
 	}
-
 	tests := []test{
 		{path: "c:", fp: xfilepath.FilePath{
 			Volume:   xfilepath.Volume{Drive: xfilepath.NullableString{Value: "c:", HasValue: true}},
@@ -21,6 +20,7 @@ func TestCanParse(t *testing.T) {
 		}},
 		{path: "c:/", fp: xfilepath.FilePath{
 			Volume:   xfilepath.Volume{Drive: xfilepath.NullableString{Value: "c:", HasValue: true}},
+			Segments: []string{""},
 			Absolute: true,
 		}},
 		{path: "c:/foo", fp: xfilepath.FilePath{
@@ -45,6 +45,7 @@ func TestCanParse(t *testing.T) {
 				Host:  xfilepath.NullableString{Value: "host", HasValue: true},
 				Share: xfilepath.NullableString{Value: "share", HasValue: true},
 			},
+			Segments: []string{""},
 			Absolute: true,
 		}},
 		{path: "//host/share/foo", fp: xfilepath.FilePath{
@@ -67,6 +68,7 @@ func TestCanParse(t *testing.T) {
 				Host:  xfilepath.NullableString{Value: "host", HasValue: true},
 				Share: xfilepath.NullableString{Value: "share", HasValue: true},
 			},
+			Segments: []string{""}, // trailing slash
 			Absolute: true,
 		}},
 		{path: `\\host\share\foo`, fp: xfilepath.FilePath{
@@ -91,7 +93,43 @@ func TestCanParse(t *testing.T) {
 			},
 			Absolute: true,
 		}},
-
+		{path: "//abc//", fp: xfilepath.FilePath{
+			Volume: xfilepath.Volume{
+				Host:  xfilepath.NullableString{Value: "abc", HasValue: true},
+				Share: xfilepath.NullableString{Value: "", HasValue: true},
+			},
+			Segments: []string{""},
+			Absolute: true,
+		}},
+		{path: "//abc", fp: xfilepath.FilePath{
+			Volume: xfilepath.Volume{
+				Host: xfilepath.NullableString{Value: "abc", HasValue: true},
+			},
+			Absolute: true,
+		}},
+		{path: "///abc", fp: xfilepath.FilePath{
+			Volume: xfilepath.Volume{
+				Host:  xfilepath.NullableString{Value: "", HasValue: true},
+				Share: xfilepath.NullableString{Value: "abc", HasValue: true},
+			},
+			Absolute: true,
+		}},
+		{path: "//abc//", fp: xfilepath.FilePath{
+			Volume: xfilepath.Volume{
+				Host:  xfilepath.NullableString{Value: "abc", HasValue: true},
+				Share: xfilepath.NullableString{Value: "", HasValue: true},
+			},
+			Segments: []string{""},
+			Absolute: true,
+		}},
+		{path: "///abc/", fp: xfilepath.FilePath{
+			Volume: xfilepath.Volume{
+				Host:  xfilepath.NullableString{Value: "", HasValue: true},
+				Share: xfilepath.NullableString{Value: "abc", HasValue: true},
+			},
+			Absolute: true,
+			Segments: []string{""},
+		}},
 		{path: "/", fp: xfilepath.FilePath{
 			Absolute: true,
 		}},
@@ -100,11 +138,11 @@ func TestCanParse(t *testing.T) {
 			Absolute: false,
 		}},
 		{path: "a/b/", fp: xfilepath.FilePath{
-			Segments: []string{"a", "b"},
+			Segments: []string{"a", "b", ""},
 			Absolute: false,
 		}},
 		{path: "a/", fp: xfilepath.FilePath{
-			Segments: []string{"a"},
+			Segments: []string{"a", ""},
 			Absolute: false,
 		}},
 		{path: "a", fp: xfilepath.FilePath{
@@ -118,8 +156,8 @@ func TestCanParse(t *testing.T) {
 
 	for _, test := range tests {
 		parser := xfilepath.NewParserWithPlatform(platform.Windows)
-		result, err := parser.Parse(test.path)
+		actual, err := parser.Parse(test.path)
 		require.Nil(t, err)
-		require.Equal(t, test.fp, result, "unable to parse path '%s'", test.path)
+		require.Equal(t, test.fp, actual, "unable to parse path '%s'", test.path)
 	}
 }

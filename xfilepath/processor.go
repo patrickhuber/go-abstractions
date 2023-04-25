@@ -111,7 +111,8 @@ func (p *processor) Join(elements ...string) string {
 		accumulator = accumulator.Join(next)
 	}
 
-	return p.String(accumulator)
+	// call clean on the result
+	return p.String(accumulator.Clean())
 }
 
 // Rel implements Processor
@@ -138,6 +139,9 @@ func (p *processor) Rel(sourcepath string, targetpath string) (string, error) {
 // Clean implements Processor
 func (p *processor) Clean(path string) string {
 	fp, _ := p.parser.Parse(path)
+
+	// for empty unc paths, normalize the original string
+	// (is there a way to do this in the String method?)
 	fp = fp.Clean()
 
 	// on the windows platform if the first segment matches the drive pattern

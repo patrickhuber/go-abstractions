@@ -13,7 +13,7 @@ func TestCanParse(t *testing.T) {
 		path string
 		fp   xfilepath.FilePath
 	}
-	tests := []test{
+	windowsparse := []test{
 		{path: "c:", fp: xfilepath.FilePath{
 			Volume:   xfilepath.Volume{Drive: xfilepath.NullableString{Value: "c:", HasValue: true}},
 			Absolute: false,
@@ -130,9 +130,6 @@ func TestCanParse(t *testing.T) {
 			Absolute: true,
 			Segments: []string{""},
 		}},
-		{path: "/", fp: xfilepath.FilePath{
-			Absolute: true,
-		}},
 		{path: "a/b", fp: xfilepath.FilePath{
 			Segments: []string{"a", "b"},
 			Absolute: false,
@@ -152,12 +149,25 @@ func TestCanParse(t *testing.T) {
 		{path: "", fp: xfilepath.FilePath{
 			Absolute: false,
 		}},
+		// {path: `\a`, fp: xfilepath.FilePath{
+		// 	Absolute: false,
+		// 	Segments: []string{"a"},
+		// }},
 	}
+	linuxparse := []test{
+		{path: "/", fp: xfilepath.FilePath{
+			Absolute: true,
+		}},
+	}
+	run := func(tests []test, name string, plat platform.Platform) {
+		for _, test := range tests {
+			parser := xfilepath.NewParserWithPlatform(plat)
+			actual, err := parser.Parse(test.path)
+			require.Nil(t, err)
+			require.Equal(t, test.fp, actual, "unable to parse path '%s'", test.path)
+		}
+	}
+	run(windowsparse, "windowsparse", platform.Windows)
+	run(linuxparse, "linuxparse", platform.Linux)
 
-	for _, test := range tests {
-		parser := xfilepath.NewParserWithPlatform(platform.Windows)
-		actual, err := parser.Parse(test.path)
-		require.Nil(t, err)
-		require.Equal(t, test.fp, actual, "unable to parse path '%s'", test.path)
-	}
 }

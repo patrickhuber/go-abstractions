@@ -231,12 +231,66 @@ func (fp FilePath) Rel(other FilePath) (FilePath, error) {
 		}, nil
 	}
 
-	// paths must share common prefix
-	
-	return FilePath{}, fmt.Errorf("not implemented")
+	// remove any current directory '.' only source paths
+	if len(source.Segments) == 1 && source.Segments[0] == CurrentDirectory {
+		source.Segments = nil
+	}
+
+	// both paths must be either relative or absolute
+	// if absolute both paths must match volumes
+	if source.Absolute != target.Absolute || !source.Volume.Equal(target.Volume) {
+		return FilePath{}, fmt.Errorf("can't make target relative to source: absolute paths must share a prefix")
+	}
+
+	// get the first index where segments differ
+	firstDiff := source.firstSegmentDiff(target)
+
+	if firstDiff < len(source.Segments) && source.Segments[firstDiff] == ".." {
+		return FilePath{}, fmt.Errorf("can't make target relative to source")
+	}
+
+	var segments []string
+
+	// run the source to the end by adding ..
+	for s := firstDiff; s < len(source.Segments); s++ {
+		segments = append(segments, ParentDirectory)
+	}
+
+	// run the target to the end by adding target[firstDiff:]
+	if firstDiff < len(target.Segments) {
+		segments = append(segments, target.Segments[firstDiff:]...)
+	}
+
+	return FilePath{
+		Segments: segments,
+		Absolute: false,
+	}, nil
+}
+
+func (source FilePath) firstSegmentDiff(target FilePath) int {
+
+	sourceLen := len(source.Segments)
+	targetLen := len(target.Segments)
+	segmentLen := sourceLen
+	if targetLen < sourceLen {
+		segmentLen = targetLen
+	}
+
+	diffPosition := 0
+
+	// find the first differing element
+	for ; diffPosition < segmentLen; diffPosition++ {
+		if source.Segments[diffPosition] != target.Segments[diffPosition] {
+			break
+		}
+	}
+	return diffPosition
 }
 
 func (fp FilePath) Equal(other FilePath) bool {
+	if fp.Absolute != other.Absolute {
+		return false
+	}
 	if !fp.Volume.Equal(other.Volume) {
 		return false
 	}

@@ -154,6 +154,7 @@ func TestRel(t *testing.T) {
 		{`C:\Projects`, `c:\projects`, `.`},
 		{`C:\Projects\a\..`, `c:\projects`, `.`},
 		{`\\host\share`, `\\host\share\file.txt`, `file.txt`},
+		{`\\host\share\folder`, `\\other\test\share`, `err`},
 	}
 
 	run := func(tests []test, name string, plat platform.Platform) {
@@ -161,13 +162,9 @@ func TestRel(t *testing.T) {
 		for i, test := range tests {
 
 			actual, err := processor.Rel(test.source, test.target)
-
 			if err != nil {
-				require.Equal(t, test.expected, "err",
-					"test %s[%d] failed. source '%s' target '%s' expected 'err' actual '%s'",
-					name, i, test.source, test.target, actual)
+				actual = "err"
 			}
-
 			require.Equal(t, test.expected, actual,
 				"test %s[%d] failed. source '%s' target '%s' expected '%s' actual '%s'",
 				name, i, test.source, test.target, test.expected, actual)

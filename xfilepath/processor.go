@@ -40,6 +40,7 @@ type processor struct {
 	platform platform.Platform
 	sep      PathSeparator
 	parser   Parser
+	cmp      Comparison
 }
 
 type ProcessorOption func(p *processor)
@@ -53,6 +54,12 @@ func WithParser(parser Parser) ProcessorOption {
 func WithSeparator(separator PathSeparator) ProcessorOption {
 	return func(p *processor) {
 		p.sep = separator
+	}
+}
+
+func WithComparison(cmp Comparison) ProcessorOption {
+	return func(p *processor) {
+		p.cmp = cmp
 	}
 }
 
@@ -70,8 +77,10 @@ func NewProcessorWithPlatform(plat platform.Platform, options ...ProcessorOption
 
 	if plat.IsUnix() {
 		p.sep = ForwardSlash
+		p.cmp = CaseSensitive
 	} else {
 		p.sep = BackwardSlash
+		p.cmp = IgnoreCase
 	}
 
 	for _, option := range options {
@@ -128,7 +137,7 @@ func (p *processor) Rel(sourcepath string, targetpath string) (string, error) {
 		return "", err
 	}
 
-	result, err := source.Rel(target)
+	result, err := source.Rel(target, p.cmp)
 	if err != nil {
 		return "", err
 	}

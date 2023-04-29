@@ -29,6 +29,7 @@ type NullableString struct {
 
 type PathSeparator rune
 type PathListSeparator rune
+type Comparison int
 
 const (
 	ForwardSlash             PathSeparator     = '/'
@@ -37,6 +38,8 @@ const (
 	SemiColon                PathListSeparator = ';'
 	DefaultPathListSeparator PathListSeparator = os.PathListSeparator
 	DefaultPathSeparator     PathSeparator     = os.PathSeparator
+	IgnoreCase               Comparison        = 1
+	CaseSensitive            Comparison        = 0
 
 	CurrentDirectory = "."
 	ParentDirectory  = ".."
@@ -220,12 +223,12 @@ func toSlice[T any](s stack.Stack[T]) []T {
 	return slice
 }
 
-func (fp FilePath) Rel(other FilePath) (FilePath, error) {
+func (fp FilePath) Rel(other FilePath, cmp Comparison) (FilePath, error) {
 	source := fp.Clean()
 	target := other.Clean()
 
 	// if paths are equal, return CurrentDirectory string
-	if source.Equal(target) {
+	if source.Equal(target, cmp) {
 		return FilePath{
 			Segments: []string{CurrentDirectory},
 		}, nil
@@ -238,12 +241,12 @@ func (fp FilePath) Rel(other FilePath) (FilePath, error) {
 
 	// both paths must be either relative or absolute
 	// if absolute both paths must match volumes
-	if source.Absolute != target.Absolute || !source.Volume.Equal(target.Volume) {
+	if source.Absolute != target.Absolute || !source.Volume.Equal(target.Volume, cmp) {
 		return FilePath{}, fmt.Errorf("can't make target relative to source: absolute paths must share a prefix")
 	}
 
 	// get the first index where segments differ
-	firstDiff := source.firstSegmentDiff(target)
+	firstDiff := source.firstSegmentDiff(target, cmp)
 
 	if firstDiff < len(source.Segments) && source.Segments[firstDiff] == ".." {
 		return FilePath{}, fmt.Errorf("can't make target relative to source")
@@ -267,55 +270,75 @@ func (fp FilePath) Rel(other FilePath) (FilePath, error) {
 	}, nil
 }
 
-func (source FilePath) firstSegmentDiff(target FilePath) int {
+func (source FilePath) firstSegmentDiff(target FilePath, cmp Comparison) int {
 
 	sourceLen := len(source.Segments)
 	targetLen := len(target.Segments)
+
 	segmentLen := sourceLen
 	if targetLen < sourceLen {
 		segmentLen = targetLen
 	}
 
-	diffPosition := 0
-
 	// find the first differing element
-	for ; diffPosition < segmentLen; diffPosition++ {
-		if source.Segments[diffPosition] != target.Segments[diffPosition] {
-			break
+	for diffPosition := 0; diffPosition < segmentLen; diffPosition++ {
+		if !equal(source.Segments[diffPosition], target.Segments[diffPosition], cmp) {
+			return diffPosition
 		}
 	}
-	return diffPosition
+	return segmentLen
 }
 
-func (fp FilePath) Equal(other FilePath) bool {
+// Equal compares two paths using case sensitive comparison
+func (fp FilePath) Equal(other FilePath, cmp Comparison) bool {
 	if fp.Absolute != other.Absolute {
 		return false
 	}
-	if !fp.Volume.Equal(other.Volume) {
+	if !fp.Volume.Equal(other.Volume, cmp) {
 		return false
 	}
 	if len(fp.Segments) != len(other.Segments) {
 		return false
 	}
+
 	for i := 0; i < len(fp.Segments); i++ {
-		if fp.Segments[i] != other.Segments[i] {
+		if !equal(fp.Segments[i], other.Segments[i], cmp) {
 			return false
 		}
 	}
 	return true
 }
 
-func (v Volume) Equal(other Volume) bool {
-	if !v.Drive.Equal(other.Drive) {
-		return false
+func equal(s, t string, cmp Comparison) bool {
+	if cmp == IgnoreCase {
+		return strings.EqualFold(s, t)
 	}
-	if !v.Host.Equal(other.Host) {
-		return false
-	}
-	return v.Share.Equal(other.Share)
+	return s == t
 }
 
-func (s NullableString) Equal(other NullableString) bool {
-	return s.HasValue == other.HasValue &&
-		s.Value == other.Value
+// Equal compares two volumes using case sensetive comparison
+func (v Volume) Equal(other Volume, cmp Comparison) bool {
+	if !v.Drive.Equal(other.Drive, cmp) {
+		return false
+	}
+	if !v.Host.Equal(other.Host, cmp) {
+		return false
+	}
+	return v.Share.Equal(other.Share, cmp)
+}
+
+// Equal compares two nullable strings using case sensitive comparison
+func (s NullableString) Equal(other NullableString, cmp Comparison) bool {
+	// both strings must have a value or not have a value
+	if s.HasValue != other.HasValue {
+		return false
+	}
+
+	// both do not have value
+	if !s.HasValue {
+		return true
+	}
+
+	// both have value, return the equality of the values
+	return equal(s.Value, other.Value, cmp)
 }

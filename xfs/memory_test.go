@@ -3,6 +3,7 @@ package xfs_test
 import (
 	"testing"
 
+	"github.com/patrickhuber/go-xplat/platform"
 	"github.com/patrickhuber/go-xplat/xfilepath"
 	"github.com/patrickhuber/go-xplat/xfs"
 	"github.com/stretchr/testify/require"
@@ -10,7 +11,9 @@ import (
 
 func TestMkdirCreatesRootUnix(t *testing.T) {
 	path := "/"
-	f := xfs.NewMemory(xfs.WithPathSeperator(xfilepath.ForwardSlash))
+	parser := xfilepath.NewParserWithPlatform(platform.Linux)
+	processor := xfilepath.NewProcessor(xfilepath.WithParser(parser))
+	f := xfs.NewMemory(xfs.WithProcessor(processor))
 	err := f.Mkdir(path, 0666)
 	require.Nil(t, err)
 	ok, err := f.Exists(path)
@@ -20,14 +23,16 @@ func TestMkdirCreatesRootUnix(t *testing.T) {
 
 func TestMkdirFailsWhenRootNotExists(t *testing.T) {
 	path := "/test"
-	f := xfs.NewMemory(xfs.WithPathSeperator(xfilepath.ForwardSlash))
+	processor := xfilepath.NewProcessorWithPlatform(platform.Linux)
+	f := xfs.NewMemory(xfs.WithProcessor(processor))
 	err := f.Mkdir(path, 0666)
 	require.NotNil(t, err)
 }
 
 func TestMkdirAllCreatesAllDirectories(t *testing.T) {
 	path := "/gran/parent/child"
-	f := xfs.NewMemory(xfs.WithPathSeperator(xfilepath.ForwardSlash))
+	processor := xfilepath.NewProcessorWithPlatform(platform.Linux)
+	f := xfs.NewMemory(xfs.WithProcessor(processor))
 	err := f.MkdirAll(path, 0666)
 	require.Nil(t, err)
 	paths := []string{

@@ -189,7 +189,8 @@ func (p *processor) VolumeName(path string) string {
 }
 
 func (p *processor) Ext(path string) string {
-	return ""
+	fp, _ := p.parser.Parse(path)
+	return fp.Ext()
 }
 
 func (p *processor) Dir(path string) string {

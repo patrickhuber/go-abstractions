@@ -1,55 +1,55 @@
-package xfilepath_test
+package filepath_test
 
 import (
 	"testing"
 
+	"github.com/patrickhuber/go-xplat/filepath"
 	"github.com/patrickhuber/go-xplat/platform"
-	"github.com/patrickhuber/go-xplat/xfilepath"
 	"github.com/stretchr/testify/require"
 )
 
 func TestJoin(t *testing.T) {
 	type test struct {
 		elements []string
-		sep      xfilepath.PathSeparator
+		sep      filepath.PathSeparator
 		result   string
 	}
 
 	tests := []test{
 		{
 			[]string{"a", "b", "c"},
-			xfilepath.ForwardSlash,
+			filepath.ForwardSlash,
 			"a/b/c",
 		},
 		{
 			[]string{"a", "b/c"},
-			xfilepath.ForwardSlash,
+			filepath.ForwardSlash,
 			"a/b/c",
 		},
 		{
 			[]string{"a/b", "c"},
-			xfilepath.ForwardSlash,
+			filepath.ForwardSlash,
 			"a/b/c",
 		},
 		{
 			[]string{"a/b", "/c"},
-			xfilepath.ForwardSlash,
+			filepath.ForwardSlash,
 			"a/b/c",
 		},
 		{
 			[]string{"/a/b", "/c"},
-			xfilepath.ForwardSlash,
+			filepath.ForwardSlash,
 			"/a/b/c",
 		},
 		{
 			[]string{`c:\`, `a\b`, `c`},
-			xfilepath.BackwardSlash,
+			filepath.BackwardSlash,
 			`c:\a\b\c`,
 		},
 	}
 
 	for _, test := range tests {
-		processor := xfilepath.NewProcessor(xfilepath.WithSeparator(test.sep))
+		processor := filepath.NewProcessor(filepath.WithSeparator(test.sep))
 		actual := processor.Join(test.elements...)
 		require.Equal(t, test.result, actual)
 	}
@@ -58,7 +58,7 @@ func TestJoin(t *testing.T) {
 func TestRoot(t *testing.T) {
 	type test struct {
 		path     string
-		sep      xfilepath.PathSeparator
+		sep      filepath.PathSeparator
 		expected string
 	}
 
@@ -66,31 +66,31 @@ func TestRoot(t *testing.T) {
 		{
 			// UNC forward slash
 			"//host/share/gran/parent/child",
-			xfilepath.ForwardSlash,
+			filepath.ForwardSlash,
 			"//host/share",
 		},
 		{
 			// UNC backward slash
 			`\\host\share\gran\parent\child`,
-			xfilepath.BackwardSlash,
+			filepath.BackwardSlash,
 			`\\host\share`,
 		},
 		{
 			// Unix Path
 			"/gran/parent/child",
-			xfilepath.ForwardSlash,
+			filepath.ForwardSlash,
 			"/",
 		},
 		{
 			// Windows Path
 			`c:\gran\parent\child`,
-			xfilepath.BackwardSlash,
+			filepath.BackwardSlash,
 			`c:\`,
 		},
 	}
 
 	for _, test := range tests {
-		processor := xfilepath.NewProcessor(xfilepath.WithSeparator(test.sep))
+		processor := filepath.NewProcessor(filepath.WithSeparator(test.sep))
 		actual := processor.Root(test.path)
 		require.Equal(t, test.expected, actual)
 	}
@@ -158,7 +158,7 @@ func TestRel(t *testing.T) {
 	}
 
 	run := func(tests []test, name string, plat platform.Platform) {
-		processor := xfilepath.NewProcessorWithPlatform(plat)
+		processor := filepath.NewProcessorWithPlatform(plat)
 		for i, test := range tests {
 
 			actual, err := processor.Rel(test.source, test.target)
@@ -275,7 +275,7 @@ func TestClean(t *testing.T) {
 	}
 
 	run := func(tests []test, name string, plat platform.Platform) {
-		processor := xfilepath.NewProcessorWithPlatform(plat)
+		processor := filepath.NewProcessorWithPlatform(plat)
 		for i, test := range tests {
 			actual := processor.Clean(test.path)
 			require.Equal(t, test.expected, actual,

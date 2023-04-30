@@ -1,4 +1,4 @@
-package xos
+package os
 
 const (
 	MockAmd64Architecture = "amd64"

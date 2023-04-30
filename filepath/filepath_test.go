@@ -1,136 +1,136 @@
-package xfilepath_test
+package filepath_test
 
 import (
 	"testing"
 
-	"github.com/patrickhuber/go-xplat/xfilepath"
+	"github.com/patrickhuber/go-xplat/filepath"
 	"github.com/stretchr/testify/require"
 )
 
 func TestString(t *testing.T) {
 	type test struct {
-		fp       xfilepath.FilePath
-		sep      xfilepath.PathSeparator
+		fp       filepath.FilePath
+		sep      filepath.PathSeparator
 		expected string
 	}
 
 	tests := []test{
 		{
 			// UNC share forward slash
-			fp: xfilepath.FilePath{
-				Volume: xfilepath.Volume{
-					Host:  xfilepath.NullableString{Value: "host", HasValue: true},
-					Share: xfilepath.NullableString{Value: "share", HasValue: true},
+			fp: filepath.FilePath{
+				Volume: filepath.Volume{
+					Host:  filepath.NullableString{Value: "host", HasValue: true},
+					Share: filepath.NullableString{Value: "share", HasValue: true},
 				},
 				Segments: []string{"gran", "parent", "child"},
 				Absolute: true,
 			},
-			sep:      xfilepath.ForwardSlash,
+			sep:      filepath.ForwardSlash,
 			expected: "//host/share/gran/parent/child",
 		},
 		{
 			// UNC share backward slash
-			fp: xfilepath.FilePath{
-				Volume: xfilepath.Volume{
-					Host:  xfilepath.NullableString{Value: "host", HasValue: true},
-					Share: xfilepath.NullableString{Value: "share", HasValue: true},
+			fp: filepath.FilePath{
+				Volume: filepath.Volume{
+					Host:  filepath.NullableString{Value: "host", HasValue: true},
+					Share: filepath.NullableString{Value: "share", HasValue: true},
 				},
 				Segments: []string{"gran", "parent", "child"},
 				Absolute: true,
 			},
-			sep:      xfilepath.BackwardSlash,
+			sep:      filepath.BackwardSlash,
 			expected: `\\host\share\gran\parent\child`,
 		},
 		{
 			// UNC share only root
-			fp: xfilepath.FilePath{
-				Volume: xfilepath.Volume{
-					Host:  xfilepath.NullableString{Value: "host", HasValue: true},
-					Share: xfilepath.NullableString{Value: "share", HasValue: true},
+			fp: filepath.FilePath{
+				Volume: filepath.Volume{
+					Host:  filepath.NullableString{Value: "host", HasValue: true},
+					Share: filepath.NullableString{Value: "share", HasValue: true},
 				},
 				Segments: []string{},
 				Absolute: true,
 			},
-			sep:      xfilepath.BackwardSlash,
+			sep:      filepath.BackwardSlash,
 			expected: `\\host\share`,
 		},
 		{
 			// UNC share without share name and trailing slash
-			fp: xfilepath.FilePath{
-				Volume: xfilepath.Volume{
-					Host:  xfilepath.NullableString{Value: "abc", HasValue: true},
-					Share: xfilepath.NullableString{Value: "", HasValue: true},
+			fp: filepath.FilePath{
+				Volume: filepath.Volume{
+					Host:  filepath.NullableString{Value: "abc", HasValue: true},
+					Share: filepath.NullableString{Value: "", HasValue: true},
 				},
 				Segments: []string{""},
 				Absolute: true,
 			},
-			sep:      xfilepath.BackwardSlash,
+			sep:      filepath.BackwardSlash,
 			expected: `\\abc\\`,
 		},
 		{
 			// UNC share without share name and trailing slash
-			fp: xfilepath.FilePath{
-				Volume: xfilepath.Volume{
-					Host: xfilepath.NullableString{Value: "abc", HasValue: true},
+			fp: filepath.FilePath{
+				Volume: filepath.Volume{
+					Host: filepath.NullableString{Value: "abc", HasValue: true},
 				},
 				Absolute: true,
 			},
-			sep:      xfilepath.BackwardSlash,
+			sep:      filepath.BackwardSlash,
 			expected: `\\abc`,
 		},
 		{
 			// Unix Path
-			fp: xfilepath.FilePath{
+			fp: filepath.FilePath{
 				Segments: []string{"gran", "parent", "child"},
 				Absolute: true,
 			},
-			sep:      xfilepath.ForwardSlash,
+			sep:      filepath.ForwardSlash,
 			expected: "/gran/parent/child",
 		},
 		{
 			// Windows Path
-			fp: xfilepath.FilePath{
-				Volume: xfilepath.Volume{
-					Drive: xfilepath.NullableString{Value: `c:`, HasValue: true},
+			fp: filepath.FilePath{
+				Volume: filepath.Volume{
+					Drive: filepath.NullableString{Value: `c:`, HasValue: true},
 				},
 				Segments: []string{"gran", "parent", "child"},
 				Absolute: true,
 			},
-			sep:      xfilepath.BackwardSlash,
+			sep:      filepath.BackwardSlash,
 			expected: `c:\gran\parent\child`,
 		},
 		{
 			// relative
-			fp: xfilepath.FilePath{
+			fp: filepath.FilePath{
 				Segments: []string{"gran", "parent", "child"},
 				Absolute: false,
 			},
-			sep:      xfilepath.ForwardSlash,
+			sep:      filepath.ForwardSlash,
 			expected: "gran/parent/child",
 		},
 		{
 			// root unix path
-			fp: xfilepath.FilePath{
+			fp: filepath.FilePath{
 				Absolute: true,
 			},
-			sep:      xfilepath.ForwardSlash,
+			sep:      filepath.ForwardSlash,
 			expected: "/",
 		},
 		{
 			// root windows path
-			fp: xfilepath.FilePath{
-				Volume: xfilepath.Volume{
-					Drive: xfilepath.NullableString{Value: `c:`, HasValue: true},
+			fp: filepath.FilePath{
+				Volume: filepath.Volume{
+					Drive: filepath.NullableString{Value: `c:`, HasValue: true},
 				},
 				Absolute: true,
 			},
-			sep:      xfilepath.BackwardSlash,
+			sep:      filepath.BackwardSlash,
 			expected: `c:\`,
 		},
 	}
 
 	for i, test := range tests {
-		processor := xfilepath.NewProcessor(xfilepath.WithSeparator(test.sep))
+		processor := filepath.NewProcessor(filepath.WithSeparator(test.sep))
 		actual := test.fp.String(processor.Separator())
 		require.Equal(t, test.expected, actual, "failed test at [%d]", i)
 	}
@@ -140,35 +140,35 @@ func TestVolumeName(t *testing.T) {
 	type test struct {
 		path     string
 		expected string
-		sep      xfilepath.PathSeparator
+		sep      filepath.PathSeparator
 	}
 
 	tests := []test{
 		{
 			"//host/share/gran/parent/child",
 			"//host/share",
-			xfilepath.ForwardSlash,
+			filepath.ForwardSlash,
 		},
 		{
 			`\\host\share\gran\parent\child`,
 			`\\host\share`,
-			xfilepath.BackwardSlash,
+			filepath.BackwardSlash,
 		},
 		{
 			"/gran/parent/child",
 			"",
-			xfilepath.ForwardSlash,
+			filepath.ForwardSlash,
 		},
 		{
 			// Windows Path
 			`c:\gran\parent\child`,
 			`c:`,
-			xfilepath.BackwardSlash,
+			filepath.BackwardSlash,
 		},
 	}
 
 	for _, test := range tests {
-		processor := xfilepath.NewProcessor(xfilepath.WithSeparator(test.sep))
+		processor := filepath.NewProcessor(filepath.WithSeparator(test.sep))
 		actual := processor.VolumeName(test.path)
 		require.Equal(t, test.expected, actual)
 	}

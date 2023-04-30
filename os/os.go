@@ -1,5 +1,5 @@
-// Package xos provides abstraction of the os package. Any os function that doesn't have a better fit lands in this package
-package xos
+// Package os provides abstraction of the os package. Any os function that doesn't have a better fit lands in this package
+package os
 
 import (
 	"os"

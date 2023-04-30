@@ -1,4 +1,4 @@
-package xfs
+package fs
 
 import (
 	"fmt"
@@ -7,12 +7,12 @@ import (
 	"strings"
 	fstest "testing/fstest"
 
-	"github.com/patrickhuber/go-xplat/xfilepath"
+	"github.com/patrickhuber/go-xplat/filepath"
 )
 
 type memory struct {
 	fs        fstest.MapFS
-	processor xfilepath.Processor
+	processor filepath.Processor
 }
 
 func NewMemory(options ...MemoryOption) FS {
@@ -21,7 +21,7 @@ func NewMemory(options ...MemoryOption) FS {
 		op(m)
 	}
 	if m.processor == nil {
-		m.processor = xfilepath.NewProcessor()
+		m.processor = filepath.NewProcessor()
 	}
 	if m.fs == nil {
 		m.fs = fstest.MapFS{}
@@ -31,7 +31,7 @@ func NewMemory(options ...MemoryOption) FS {
 
 type MemoryOption = func(*memory)
 
-func WithProcessor(processor xfilepath.Processor) MemoryOption {
+func WithProcessor(processor filepath.Processor) MemoryOption {
 	return func(m *memory) {
 		m.processor = processor
 	}

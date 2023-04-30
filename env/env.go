@@ -1,4 +1,4 @@
-package xenv
+package env
 
 import (
 	"os"
@@ -49,7 +49,7 @@ func (e *env) Export() map[string]string {
 		value := split[1]
 
 		clone[key] = value
-	}	
+	}
 	return clone
 }
 

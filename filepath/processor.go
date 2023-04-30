@@ -1,4 +1,4 @@
-package xfilepath
+package filepath
 
 import (
 	"regexp"

@@ -1,4 +1,4 @@
-package xfs
+package fs
 
 import (
 	iofs "io/fs"

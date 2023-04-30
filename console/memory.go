@@ -1,4 +1,4 @@
-package cmdline
+package console
 
 import (
 	"bytes"
@@ -19,8 +19,8 @@ type memory struct {
 	executable string
 }
 
-type MemoryCommandLine interface {
-	CommandLine
+type Memory interface {
+	Console
 	// OutBuffer exposes the output buffer for the memory console to enable testing
 	OutBuffer() *bytes.Buffer
 	// ErrBuffer exposes the error buffer for the memory console to enable testing
@@ -43,7 +43,7 @@ func WithArgs(args []string) MemoryOption {
 	}
 }
 
-func NewMemory(options ...MemoryOption) MemoryCommandLine {
+func NewMemory(options ...MemoryOption) Memory {
 	m := &memory{
 		in:         &bytes.Buffer{},
 		out:        &bytes.Buffer{},

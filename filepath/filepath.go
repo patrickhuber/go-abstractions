@@ -289,6 +289,14 @@ func (source FilePath) firstSegmentDiff(target FilePath, cmp Comparison) int {
 	return segmentLen
 }
 
+func (fp FilePath) Dir() FilePath {
+	last := len(fp.Segments) - 1
+	if last >= 0 && fp.Segments[last] != "" {
+		fp.Segments[last] = ""
+	}
+	return fp.Clean()
+}
+
 // Equal compares two paths using case sensitive comparison
 func (fp FilePath) Equal(other FilePath, cmp Comparison) bool {
 	if fp.Absolute != other.Absolute {

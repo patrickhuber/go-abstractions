@@ -297,6 +297,19 @@ func (fp FilePath) Dir() FilePath {
 	return fp.Clean()
 }
 
+func (fp FilePath) Ext() string {
+	if len(fp.Segments) == 0 {
+		return ""
+	}
+	last := fp.Segments[len(fp.Segments)-1]
+	for i := len(last) - 1; i >= 0; i-- {
+		if last[i] == '.' {
+			return last[i:]
+		}
+	}
+	return ""
+}
+
 // Equal compares two paths using case sensitive comparison
 func (fp FilePath) Equal(other FilePath, cmp Comparison) bool {
 	if fp.Absolute != other.Absolute {

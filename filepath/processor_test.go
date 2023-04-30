@@ -340,3 +340,23 @@ func TestDir(t *testing.T) {
 	run(nonwindirtests, "nonwindirtests", platform.Linux)
 	run(windirtests, "windirtests", platform.Windows)
 }
+
+func TestExt(t *testing.T) {
+	type test struct {
+		path string
+		ext  string
+	}
+	var exttests = []test{
+		{"path.go", ".go"},
+		{"path.pb.go", ".go"},
+		{"a.dir/b", ""},
+		{"a.dir/b.go", ".go"},
+		{"a.dir/", ""},
+	}
+
+	processor := filepath.NewProcessor()
+	for _, test := range exttests {
+		actual := processor.Ext(test.path)
+		require.Equal(t, test.ext, actual)
+	}
+}

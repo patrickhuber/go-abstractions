@@ -287,3 +287,56 @@ func TestClean(t *testing.T) {
 	run(nonwincleantests, "nonwincleantests", platform.Linux)
 	run(wincleantests, "wincleantests", platform.Windows)
 }
+
+func TestDir(t *testing.T) {
+
+	type test struct {
+		path     string
+		expected string
+	}
+
+	var dirtests = []test{
+		{"", "."},
+		{".", "."},
+		{"/.", "/"},
+		{"/", "/"},
+		{"/foo", "/"},
+		{"x/", "x"},
+		{"abc", "."},
+		{"abc/def", "abc"},
+		{"a/b/.x", "a/b"},
+		{"a/b/c.", "a/b"},
+		{"a/b/c.x", "a/b"},
+	}
+
+	var nonwindirtests = []test{
+		{"////", "/"},
+	}
+
+	var windirtests = []test{
+		{`c:\`, `c:\`},
+		{`c:.`, `c:.`},
+		{`c:\a\b`, `c:\a`},
+		{`c:a\b`, `c:a`},
+		{`c:a\b\c`, `c:a\b`},
+		{`\\host\share`, `\\host\share`},
+		{`\\host\share\`, `\\host\share\`},
+		{`\\host\share\a`, `\\host\share\`},
+		{`\\host\share\a\b`, `\\host\share\a`},
+		{`\\\\`, `\\\\`},
+	}
+
+	run := func(tests []test, name string, plat platform.Platform) {
+		processor := filepath.NewProcessorWithPlatform(plat)
+		for i, test := range tests {
+			actual := processor.Dir(test.path)
+			require.Equal(t, test.expected, actual,
+				"%s[%d] given '%s' expected '%s' actual '%s'",
+				name, i, test.path, test.expected, actual)
+		}
+	}
+
+	run(dirtests, "dirtests", platform.Linux)
+	run(nonwindirtests, "nonwindirtests", platform.Linux)
+	run(windirtests, "windirtests", platform.Windows)
+}

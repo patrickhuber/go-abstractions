@@ -26,12 +26,22 @@ type VolumeNamePath interface {
 	VolumeName(path string) string
 }
 
+type DirPath interface {
+	Dir(path string) string
+}
+
+type ExtPath interface {
+	Ext(path string) string
+}
+
 type Processor interface {
 	JoinPath
 	RelPath
 	CleanPath
 	RootPath
 	VolumeNamePath
+	DirPath
+	ExtPath
 	Separator() PathSeparator
 	Parser() Parser
 }
@@ -176,6 +186,16 @@ func (p *processor) Root(path string) string {
 func (p *processor) VolumeName(path string) string {
 	fp, _ := p.parser.Parse(path)
 	return fp.VolumeName(p.sep)
+}
+
+func (p *processor) Ext(path string) string {
+	return ""
+}
+
+func (p *processor) Dir(path string) string {
+	fp, _ := p.parser.Parse(path)
+	dir := fp.Dir()
+	return dir.String(p.sep)
 }
 
 func (p *processor) String(fp FilePath) string {

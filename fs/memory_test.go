@@ -47,3 +47,21 @@ func TestMkdirAllCreatesAllDirectories(t *testing.T) {
 		require.True(t, ok, "%s does not exist", p)
 	}
 }
+
+func TestWriteFile(t *testing.T) {
+	path := "/gran/parent/child"
+	processor := filepath.NewProcessorWithPlatform(platform.Linux)
+	filep := processor.Join(path, "file.txt")
+	f := fs.NewMemory(fs.WithProcessor(processor))
+	err := f.MkdirAll(path, 0666)
+	require.Nil(t, err)
+
+	// create the file
+	err = f.WriteFile(filep, []byte("file"), 0600)
+	require.Nil(t, err)
+
+	// read the file
+	content, err := f.ReadFile(filep)
+	require.Nil(t, err)
+	require.Equal(t, "file", string(content))
+}

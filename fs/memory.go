@@ -128,7 +128,12 @@ func (m *memory) ReadDir(name string) ([]fs.DirEntry, error) {
 
 		// any file will have the prefix of the path
 		if strings.HasPrefix(path, name) {
-			entries = append(entries, &infoFile{name: originalPath, file: file})
+
+			// get the file name
+			fileName := m.processor.Base(originalPath)
+
+			// append
+			entries = append(entries, &infoFile{name: fileName, file: file})
 		}
 	}
 	return entries, nil

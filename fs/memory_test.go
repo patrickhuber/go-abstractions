@@ -65,3 +65,25 @@ func TestWriteFile(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, "file", string(content))
 }
+
+func TestReadDir(t *testing.T) {
+	path := "/gran/parent/child"
+	processor := filepath.NewProcessorWithPlatform(platform.Linux)
+	files := []string{"one.txt", "two.txt", "three.txt"}
+	f := fs.NewMemory(fs.WithProcessor(processor))
+	err := f.MkdirAll(path, 0666)
+	require.Nil(t, err)
+
+	// write the files
+	for _, file := range files {
+		filep := processor.Join(path, file)
+		err = f.WriteFile(filep, []byte(file), 0600)
+		require.Nil(t, err)
+	}
+
+	// list the files
+	entries, err := f.ReadDir(path)
+	require.Nil(t, err)
+	require.NotEmpty(t, entries)
+	require.Equal(t, len(files), len(entries))
+}

@@ -104,7 +104,34 @@ func (m *memory) Glob(pattern string) ([]string, error) {
 
 // ReadDir implements FS
 func (m *memory) ReadDir(name string) ([]fs.DirEntry, error) {
-	return m.fs.ReadDir(name)
+	// check that we can open the file
+	d, err := m.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer d.Close()
+
+	// create the list of entries
+	var entries []fs.DirEntry
+	for path, file := range m.fs {
+		originalPath := path
+		// make sure both are lowered if case insensitive
+		if m.processor.Comparison() == filepath.IgnoreCase {
+			path = strings.ToLower(path)
+			name = strings.ToLower(name)
+		}
+
+		// same dir
+		if path == name {
+			continue
+		}
+
+		// any file will have the prefix of the path
+		if strings.HasPrefix(path, name) {
+			entries = append(entries, &infoFile{name: originalPath, file: file})
+		}
+	}
+	return entries, nil
 }
 
 // ReadFile implements FS

@@ -34,6 +34,10 @@ type ExtPath interface {
 	Ext(path string) string
 }
 
+type BasePath interface {
+	Base(path string) string
+}
+
 type Processor interface {
 	JoinPath
 	RelPath
@@ -42,8 +46,10 @@ type Processor interface {
 	VolumeNamePath
 	DirPath
 	ExtPath
+	BasePath
 	Separator() PathSeparator
 	Parser() Parser
+	Comparison() Comparison
 }
 
 type processor struct {
@@ -199,6 +205,12 @@ func (p *processor) Dir(path string) string {
 	return dir.String(p.sep)
 }
 
+func (p *processor) Base(path string) string {
+	fp, _ := p.parser.Parse(path)
+	base := fp.Base()
+	return base.String(p.sep)
+}
+
 func (p *processor) String(fp FilePath) string {
 	return fp.String(p.sep)
 }
@@ -209,4 +221,8 @@ func (p *processor) Separator() PathSeparator {
 
 func (p *processor) Parser() Parser {
 	return p.parser
+}
+
+func (p *processor) Comparison() Comparison {
+	return p.cmp
 }

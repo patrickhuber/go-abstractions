@@ -360,3 +360,44 @@ func TestExt(t *testing.T) {
 		require.Equal(t, test.ext, actual)
 	}
 }
+
+func TestBase(t *testing.T) {
+	type test struct {
+		path     string
+		expected string
+	}
+	var basetests = []test{
+		{"", "."},
+		{".", "."},
+		{"/.", "."},
+		{"/", "/"},
+		{"////", "/"},
+		{"x/", "x"},
+		{"abc", "abc"},
+		{"abc/def", "def"},
+		{"a/b/.x", ".x"},
+		{"a/b/c.", "c."},
+		{"a/b/c.x", "c.x"},
+	}
+
+	var winbasetests = []test{
+		{`c:\`, `\`},
+		{`c:.`, `.`},
+		{`c:\a\b`, `b`},
+		{`c:a\b`, `b`},
+		{`c:a\b\c`, `c`},
+		{`\\host\share\`, `\`},
+		{`\\host\share\a`, `a`},
+		{`\\host\share\a\b`, `b`},
+	}
+	run := func(tests []test, name string, plat platform.Platform) {
+		processor := filepath.NewProcessorWithPlatform(plat)
+		for i, test := range tests {
+			actual := processor.Base(test.path)
+			require.Equal(t, test.expected, actual,
+				"%s[%d] given: '%s' expected: '%s' actual: '%s'", name, i, test.path, test.expected, actual)
+		}
+	}
+	run(basetests, "basetests", platform.Linux)
+	run(winbasetests, "winbasetests", platform.Windows)
+}

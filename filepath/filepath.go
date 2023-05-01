@@ -282,7 +282,7 @@ func (source FilePath) firstSegmentDiff(target FilePath, cmp Comparison) int {
 
 	// find the first differing element
 	for diffPosition := 0; diffPosition < segmentLen; diffPosition++ {
-		if !equal(source.Segments[diffPosition], target.Segments[diffPosition], cmp) {
+		if !cmp.Equal(source.Segments[diffPosition], target.Segments[diffPosition]) {
 			return diffPosition
 		}
 	}
@@ -310,6 +310,32 @@ func (fp FilePath) Ext() string {
 	return ""
 }
 
+func (fp FilePath) Base() FilePath {
+
+	// the empty path case
+	if fp.IsRel() && len(fp.Segments) == 0 {
+		return FilePath{
+			Absolute: false,
+			Segments: []string{CurrentDirectory},
+		}
+	}
+
+	// find the last non empty element
+	for i := len(fp.Segments) - 1; i >= 0; i-- {
+		if fp.Segments[i] == "" {
+			continue
+		}
+		return FilePath{
+			Absolute: false,
+			Segments: fp.Segments[i : i+1],
+		}
+	}
+
+	return FilePath{
+		Absolute: true,
+	}
+}
+
 // Equal compares two paths using case sensitive comparison
 func (fp FilePath) Equal(other FilePath, cmp Comparison) bool {
 	if fp.Absolute != other.Absolute {
@@ -323,14 +349,14 @@ func (fp FilePath) Equal(other FilePath, cmp Comparison) bool {
 	}
 
 	for i := 0; i < len(fp.Segments); i++ {
-		if !equal(fp.Segments[i], other.Segments[i], cmp) {
+		if !cmp.Equal(fp.Segments[i], other.Segments[i]) {
 			return false
 		}
 	}
 	return true
 }
 
-func equal(s, t string, cmp Comparison) bool {
+func (cmp Comparison) Equal(s, t string) bool {
 	if cmp == IgnoreCase {
 		return strings.EqualFold(s, t)
 	}
@@ -361,5 +387,5 @@ func (s NullableString) Equal(other NullableString, cmp Comparison) bool {
 	}
 
 	// both have value, return the equality of the values
-	return equal(s.Value, other.Value, cmp)
+	return cmp.Equal(s.Value, other.Value)
 }

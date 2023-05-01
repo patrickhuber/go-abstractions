@@ -39,7 +39,26 @@ func WithProcessor(processor filepath.Processor) MemoryOption {
 
 // Open implements FS
 func (m *memory) Open(name string) (fs.File, error) {
-	return m.fs.Open(name)
+	op := "open"
+	original := name
+	if m.processor.Comparison() == filepath.IgnoreCase {
+		name = strings.ToLower(name)
+	}
+	f, ok := m.fs[name]
+	if !ok {
+		return nil, &fs.PathError{
+			Op:   op,
+			Path: original,
+			Err:  fs.ErrNotExist,
+		}
+	}
+	return &openFile{
+		path: name,
+		infoFile: infoFile{
+			name: m.processor.Base(name),
+			file: f,
+		},
+	}, nil
 }
 
 // Rename implements FS
@@ -79,6 +98,7 @@ func (m *memory) RemoveAll(path string) error {
 
 // Glob implements FS
 func (m *memory) Glob(pattern string) ([]string, error) {
+
 	return m.fs.Glob(pattern)
 }
 
@@ -89,7 +109,25 @@ func (m *memory) ReadDir(name string) ([]fs.DirEntry, error) {
 
 // ReadFile implements FS
 func (m *memory) ReadFile(name string) ([]byte, error) {
-	return m.fs.ReadFile(name)
+
+	f, err := m.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	stat, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	buf := make([]byte, stat.Size())
+
+	_, err = f.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
 }
 
 // WriteFile implements FS
@@ -112,7 +150,12 @@ func (m *memory) Exists(path string) (bool, error) {
 
 // Stat implements FS
 func (m *memory) Stat(name string) (fs.FileInfo, error) {
-	return m.fs.Stat(name)
+	f, err := m.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return f.Stat()
 }
 
 // Sub implements FS

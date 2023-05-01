@@ -1,6 +1,7 @@
 package fs_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/patrickhuber/go-xplat/filepath"
@@ -86,4 +87,12 @@ func TestReadDir(t *testing.T) {
 	require.Nil(t, err)
 	require.NotEmpty(t, entries)
 	require.Equal(t, len(files), len(entries))
+
+	// check the entry names and values
+	nameMatch, err := regexp.Compile(`^\w+.txt$`)
+	require.Nil(t, err)
+	for _, entry := range entries {
+		matched := nameMatch.MatchString(entry.Name())
+		require.True(t, matched, "name %s is not correct", entry.Name())
+	}
 }

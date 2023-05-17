@@ -28,7 +28,7 @@ type MakeDirFS interface {
 }
 
 type CreateFS interface {
-	Create(path string) (iofs.File, error)
+	Create(path string) (File, error)
 }
 
 type FS interface {

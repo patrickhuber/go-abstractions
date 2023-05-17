@@ -7,6 +7,15 @@ import (
 	"time"
 )
 
+type File interface {
+	fs.File
+	WriteFile
+}
+
+type WriteFile interface {
+	Write(data []byte) (int, error)
+}
+
 type infoFile struct {
 	name string
 	file *fstest.MapFile
@@ -75,5 +84,19 @@ func (f *openFile) ReadAt(b []byte, offset int64) (int, error) {
 	if n < len(b) {
 		return n, io.EOF
 	}
+	return n, nil
+}
+
+func (f *openFile) Write(b []byte) (int, error) {
+	op := "write"
+	if f.file.Mode&fs.ModeDir != 0 {
+		return 0, &fs.PathError{Op: op, Path: f.path, Err: fs.ErrInvalid}
+	}
+	if f.offset < 0 {
+		return 0, &fs.PathError{Op: op, Path: f.path, Err: fs.ErrInvalid}
+	}
+	f.file.Data = append(f.file.Data[0:f.offset], b...)
+	n := len(f.file.Data)
+	f.offset = int64(n)
 	return n, nil
 }

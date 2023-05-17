@@ -110,19 +110,6 @@ func TestWrite(t *testing.T) {
 	}
 }
 
-type file struct {
-	path string
-	data []byte
-}
-
-type test struct {
-	t     *testing.T
-	path  filepath.Processor
-	fs    fs.FS
-	dirs  []string
-	files []file
-}
-
 func TestReadDir(t *testing.T) {
 	path := "/gran/parent/child"
 	processor := filepath.NewProcessorWithPlatform(platform.Linux)

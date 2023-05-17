@@ -29,6 +29,8 @@ type NullableString struct {
 
 type PathSeparator rune
 type PathListSeparator rune
+
+// Comparison operation determines how paths are compared. IgnoreCase or CaseSensitive
 type Comparison int
 
 const (
@@ -310,6 +312,7 @@ func (fp FilePath) Ext() string {
 	return ""
 }
 
+// Base returns the last element of path. Trailing path separators are removed before extracting the last element. If the path is empty, Base returns ".". If the path consists entirely of separators, Base returns a single separator.
 func (fp FilePath) Base() FilePath {
 
 	// the empty path case

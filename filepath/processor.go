@@ -205,24 +205,29 @@ func (p *processor) Dir(path string) string {
 	return dir.String(p.sep)
 }
 
+// Base returns the last element of path. Trailing path separators are removed before extracting the last element. If the path is empty, Base returns ".". If the path consists entirely of separators, Base returns a single separator.
 func (p *processor) Base(path string) string {
 	fp, _ := p.parser.Parse(path)
 	base := fp.Base()
 	return base.String(p.sep)
 }
 
+// String returns the string representation of the file path
 func (p *processor) String(fp FilePath) string {
 	return fp.String(p.sep)
 }
 
+// Separator returns the PathSeparator for the processor
 func (p *processor) Separator() PathSeparator {
 	return p.sep
 }
 
+// Parser returns the Parser for the processor
 func (p *processor) Parser() Parser {
 	return p.parser
 }
 
+// Comparison returns the path comparison operator for the processor
 func (p *processor) Comparison() Comparison {
 	return p.cmp
 }

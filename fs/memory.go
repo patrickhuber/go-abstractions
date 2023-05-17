@@ -95,6 +95,50 @@ func (m *memory) Open(name string) (fs.File, error) {
 	}, nil
 }
 
+// OpenFile implements OpenFS
+func (m *memory) OpenFile(name string, mode int, perm fs.FileMode) (File, error) {
+	op := "openFile"
+	original := name
+
+	if m.processor.Comparison() == filepath.IgnoreCase {
+		name = strings.ToLower(name)
+	}
+
+	f, ok := m.fs[name]
+	if !ok {
+		if mode&os.O_RDONLY != 0 {
+			return nil, &fs.PathError{
+				Op:   op,
+				Path: original,
+				Err:  fs.ErrNotExist,
+			}
+		} else {
+			f = &fstest.MapFile{}
+			m.fs[name] = f
+		}
+	}
+
+	// truncate if O_TRUNC specified
+	if mode&os.O_TRUNC != 0 {
+		f.Data = nil
+	}
+
+	// seek pos
+	offset := 0
+	if mode&os.O_APPEND != 0 {
+		offset = len(f.Data)
+	}
+
+	return &openFile{
+		path:   name,
+		offset: int64(offset),
+		infoFile: infoFile{
+			name: m.processor.Base(name),
+			file: f,
+		},
+	}, nil
+}
+
 // Rename implements FS
 func (m *memory) Rename(oldPath string, newPath string) error {
 	file, ok := m.fs[oldPath]

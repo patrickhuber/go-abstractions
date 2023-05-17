@@ -96,3 +96,21 @@ func TestReadDir(t *testing.T) {
 		require.True(t, matched, "name %s is not correct", entry.Name())
 	}
 }
+
+func TestCanCreateFile(t *testing.T) {
+	path := "/gran/parent/child"
+	processor := filepath.NewProcessorWithPlatform(platform.Linux)
+	files := []string{"one.txt", "two.txt", "three.txt"}
+	f := fs.NewMemory(fs.WithProcessor(processor))
+	err := f.MkdirAll(path, 0666)
+	require.Nil(t, err)
+
+	// write the files
+	for _, file := range files {
+		filep := processor.Join(path, file)
+		file, err := f.Create(filep)
+		require.Nil(t, err)
+		require.NotNil(t, file)
+		require.Nil(t, file.Close())
+	}
+}

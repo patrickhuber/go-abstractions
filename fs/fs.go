@@ -27,8 +27,13 @@ type MakeDirFS interface {
 	MkdirAll(path string, perm iofs.FileMode) error
 }
 
+type CreateFS interface {
+	Create(path string) (iofs.File, error)
+}
+
 type FS interface {
 	iofs.FS
+	CreateFS
 	RenameFS
 	RemoveFS
 	WriteFileFS

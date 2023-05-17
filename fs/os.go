@@ -13,6 +13,11 @@ func NewOS() FS {
 	return &osfs{}
 }
 
+// Create implements FS
+func (*osfs) Create(path string) (iofs.File, error) {
+	return os.Create(path)
+}
+
 // Open implements FS
 func (*osfs) Open(name string) (iofs.File, error) {
 	return os.Open(name)

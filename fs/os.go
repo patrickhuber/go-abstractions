@@ -14,7 +14,7 @@ func NewOS() FS {
 }
 
 // Create implements FS
-func (*osfs) Create(path string) (iofs.File, error) {
+func (*osfs) Create(path string) (File, error) {
 	return os.Create(path)
 }
 

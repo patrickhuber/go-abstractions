@@ -50,7 +50,7 @@ func WithPlatform(plat platform.Platform) MemoryOption {
 	}
 }
 
-func (m *memory) Create(name string) (fs.File, error) {
+func (m *memory) Create(name string) (File, error) {
 	original := name
 	if m.processor.Comparison() == filepath.IgnoreCase {
 		name = strings.ToLower(name)

@@ -114,3 +114,29 @@ func TestCanCreateFile(t *testing.T) {
 		require.Nil(t, file.Close())
 	}
 }
+
+func TestCanWriteFile(t *testing.T) {
+	path := "/gran/parent/child"
+	processor := filepath.NewProcessorWithPlatform(platform.Linux)
+	files := []string{"test.txt"}
+	f := fs.NewMemory(fs.WithProcessor(processor))
+	err := f.MkdirAll(path, 0666)
+	require.Nil(t, err)
+
+	for _, file := range files {
+		filep := processor.Join(path, file)
+		file, err := f.Create(filep)
+		require.Nil(t, err)
+		require.NotNil(t, file)
+		_, err = file.Write([]byte("test"))
+		require.Nil(t, err)
+		require.Nil(t, file.Close())
+		ofile, err := f.Open(filep)
+		require.Nil(t, err)
+		buf := []byte("    ")
+		_, err = ofile.Read(buf)
+		require.Nil(t, err)
+		require.Equal(t, "test", string(buf))
+		require.Nil(t, file.Close())
+	}
+}

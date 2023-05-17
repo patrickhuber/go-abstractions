@@ -16,6 +16,7 @@ type RenameFS interface {
 type RemoveFS interface {
 	iofs.FS
 	Remove(name string) error
+	RemoveAll(name string) error
 }
 
 type WriteFileFS interface {

@@ -4,6 +4,10 @@ import (
 	iofs "io/fs"
 )
 
+type OpenFileFS interface {
+	OpenFile(name string, flag int, perm iofs.FileMode) (File, error)
+}
+
 type RenameFS interface {
 	iofs.FS
 	Rename(oldPath, newPath string) error
@@ -33,6 +37,7 @@ type CreateFS interface {
 
 type FS interface {
 	iofs.FS
+	OpenFileFS
 	CreateFS
 	RenameFS
 	RemoveFS

@@ -1,6 +1,8 @@
 package fs_test
 
 import (
+	"io"
+	"os"
 	"regexp"
 	"testing"
 
@@ -32,8 +34,7 @@ func TestMkdirFailsWhenRootNotExists(t *testing.T) {
 
 func TestMkdirAllCreatesAllDirectories(t *testing.T) {
 	path := "/gran/parent/child"
-	processor := filepath.NewProcessorWithPlatform(platform.Linux)
-	f := fs.NewMemory(fs.WithProcessor(processor))
+	f, _ := setup(platform.Linux)
 	err := f.MkdirAll(path, 0666)
 	require.Nil(t, err)
 	paths := []string{
@@ -65,6 +66,61 @@ func TestWriteFile(t *testing.T) {
 	content, err := f.ReadFile(filep)
 	require.Nil(t, err)
 	require.Equal(t, "file", string(content))
+}
+
+func TestWrite(t *testing.T) {
+	folder := "/gran/parent/child"
+	fs, path := setup(platform.Linux)
+	type test struct {
+		name     string
+		data     []byte
+		offset   int64
+		write    []byte
+		expected string
+	}
+
+	tests := []test{
+		{"grow.txt", []byte("this is test data"), 4, []byte(" more data than expected"), "this is more data than expected"},
+		{"less.txt", []byte("this is test data"), 8, []byte("also"), "this is also data"},
+		{"end.txt", []byte("this is test data"), 13, []byte("info"), "this is test info"},
+	}
+
+	err := fs.MkdirAll(folder, 0666)
+	require.Nil(t, err)
+
+	for _, test := range tests {
+		full := path.Join(folder, test.name)
+
+		f, err := fs.OpenFile(full, os.O_CREATE|os.O_RDWR, 0666)
+		require.Nil(t, err)
+
+		n, err := f.Write(test.data)
+		require.Nil(t, err)
+		require.Equal(t, len(test.data), n)
+
+		n64, err := f.Seek(test.offset, io.SeekStart)
+		require.Nil(t, err)
+		require.Equal(t, test.offset, n64)
+
+		n, err = f.Write(test.write)
+		require.Nil(t, err)
+		require.Equal(t, n, len(test.write))
+
+		require.Nil(t, f.Close())
+	}
+}
+
+type file struct {
+	path string
+	data []byte
+}
+
+type test struct {
+	t     *testing.T
+	path  filepath.Processor
+	fs    fs.FS
+	dirs  []string
+	files []file
 }
 
 func TestReadDir(t *testing.T) {
@@ -116,10 +172,9 @@ func TestCanCreateFile(t *testing.T) {
 }
 
 func TestCanWriteFile(t *testing.T) {
+	f, processor := setup(platform.Linux)
 	path := "/gran/parent/child"
-	processor := filepath.NewProcessorWithPlatform(platform.Linux)
 	files := []string{"test.txt"}
-	f := fs.NewMemory(fs.WithProcessor(processor))
 	err := f.MkdirAll(path, 0666)
 	require.Nil(t, err)
 
@@ -139,4 +194,10 @@ func TestCanWriteFile(t *testing.T) {
 		require.Equal(t, "test", string(buf))
 		require.Nil(t, file.Close())
 	}
+}
+
+func setup(plat platform.Platform) (fs.FS, filepath.Processor) {
+	processor := filepath.NewProcessorWithPlatform(plat)
+	fs := fs.NewMemory(fs.WithProcessor(processor))
+	return fs, processor
 }

@@ -13,6 +13,11 @@ func NewOS() FS {
 	return &osfs{}
 }
 
+// OpenFile implements FS
+func (*osfs) OpenFile(name string, flag int, perm iofs.FileMode) (File, error) {
+	return os.OpenFile(name, flag, perm)
+}
+
 // Create implements FS
 func (*osfs) Create(path string) (File, error) {
 	return os.Create(path)

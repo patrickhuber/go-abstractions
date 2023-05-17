@@ -9,11 +9,10 @@ import (
 
 type File interface {
 	fs.File
-	WriteFile
-}
-
-type WriteFile interface {
-	Write(data []byte) (int, error)
+	io.ReaderAt
+	io.Writer
+	io.WriterAt
+	io.Seeker
 }
 
 type infoFile struct {
@@ -62,11 +61,11 @@ func (f *openFile) Read(b []byte) (int, error) {
 
 func (f *openFile) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
-	case 0:
+	case io.SeekStart:
 		// offset += 0
-	case 1:
+	case io.SeekCurrent:
 		offset += f.offset
-	case 2:
+	case io.SeekEnd:
 		offset += int64(len(f.file.Data))
 	}
 	if offset < 0 || offset > int64(len(f.file.Data)) {
@@ -89,14 +88,41 @@ func (f *openFile) ReadAt(b []byte, offset int64) (int, error) {
 
 func (f *openFile) Write(b []byte) (int, error) {
 	op := "write"
+	written, err := f.WriteAt(b, f.offset)
+	if err != nil {
+		return 0, changeOp(err, op)
+	}
+	f.offset += int64(written)
+	return written, nil
+}
+
+func changeOp(err error, op string) error {
+	perr, ok := err.(*fs.PathError)
+	if !ok {
+		return err
+	}
+	perr.Op = op
+	return perr
+}
+
+func (f *openFile) WriteAt(b []byte, offset int64) (int, error) {
+	op := "writeAt"
 	if f.file.Mode&fs.ModeDir != 0 {
 		return 0, &fs.PathError{Op: op, Path: f.path, Err: fs.ErrInvalid}
 	}
-	if f.offset < 0 {
+	if offset < 0 {
 		return 0, &fs.PathError{Op: op, Path: f.path, Err: fs.ErrInvalid}
 	}
-	f.file.Data = append(f.file.Data[0:f.offset], b...)
-	n := len(f.file.Data)
-	f.offset = int64(n)
-	return n, nil
+
+	copy(f.file.Data[offset:], b)
+	f.file.Data = append(f.file.Data, b[min(len(b), len(f.file.Data)-int(offset)):]...)
+
+	return len(b), nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

@@ -8,6 +8,7 @@ import (
 	fstest "testing/fstest"
 
 	"github.com/patrickhuber/go-xplat/filepath"
+	"github.com/patrickhuber/go-xplat/platform"
 )
 
 type memory struct {
@@ -35,6 +36,39 @@ func WithProcessor(processor filepath.Processor) MemoryOption {
 	return func(m *memory) {
 		m.processor = processor
 	}
+}
+
+func WithPlatform(plat platform.Platform) MemoryOption {
+	return func(m *memory) {
+		m.processor = filepath.NewProcessorWithPlatform(plat)
+		m.fs = fstest.MapFS{}
+		if plat.IsUnix() {
+			m.Mkdir("/", 0666)
+		} else {
+			m.Mkdir(`c:\`, 0666)
+		}
+	}
+}
+
+func (m *memory) Create(name string) (fs.File, error) {
+	original := name
+	if m.processor.Comparison() == filepath.IgnoreCase {
+		name = strings.ToLower(name)
+	}
+	file, ok := m.fs[name]
+	if !ok {
+		file = &fstest.MapFile{}
+		m.fs[name] = file
+	}
+	file.Data = nil
+	file.Mode = 0666
+	return &openFile{
+		path: original,
+		infoFile: infoFile{
+			name: m.processor.Base(original),
+			file: file,
+		},
+	}, nil
 }
 
 // Open implements FS

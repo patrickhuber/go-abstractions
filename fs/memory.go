@@ -52,9 +52,8 @@ func WithPlatform(plat platform.Platform) MemoryOption {
 
 func (m *memory) Create(name string) (File, error) {
 	original := name
-	if m.processor.Comparison() == filepath.IgnoreCase {
-		name = strings.ToLower(name)
-	}
+	name = m.normalizePath(name)
+
 	file, ok := m.fs[name]
 	if !ok {
 		file = &fstest.MapFile{}
@@ -71,13 +70,19 @@ func (m *memory) Create(name string) (File, error) {
 	}, nil
 }
 
+func (m *memory) normalizePath(name string) string {
+	if m.processor.Comparison() == filepath.IgnoreCase {
+		return strings.ToLower(name)
+	}
+	return name
+}
+
 // Open implements FS
 func (m *memory) Open(name string) (fs.File, error) {
 	op := "open"
 	original := name
-	if m.processor.Comparison() == filepath.IgnoreCase {
-		name = strings.ToLower(name)
-	}
+	name = m.normalizePath(name)
+
 	f, ok := m.fs[name]
 	if !ok {
 		return nil, &fs.PathError{
@@ -99,10 +104,7 @@ func (m *memory) Open(name string) (fs.File, error) {
 func (m *memory) OpenFile(name string, mode int, perm fs.FileMode) (File, error) {
 	op := "openFile"
 	original := name
-
-	if m.processor.Comparison() == filepath.IgnoreCase {
-		name = strings.ToLower(name)
-	}
+	name = m.normalizePath(name)
 
 	f, ok := m.fs[name]
 	if !ok {
@@ -141,6 +143,10 @@ func (m *memory) OpenFile(name string, mode int, perm fs.FileMode) (File, error)
 
 // Rename implements FS
 func (m *memory) Rename(oldPath string, newPath string) error {
+
+	oldPath = m.normalizePath(oldPath)
+	newPath = m.normalizePath(newPath)
+
 	file, ok := m.fs[oldPath]
 	if !ok {
 		return os.ErrNotExist
@@ -152,6 +158,7 @@ func (m *memory) Rename(oldPath string, newPath string) error {
 
 // Remove implements FS
 func (m *memory) Remove(path string) error {
+	path = m.normalizePath(path)
 	_, ok := m.fs[path]
 	if !ok {
 		return os.ErrNotExist
@@ -242,6 +249,7 @@ func (m *memory) ReadFile(name string) ([]byte, error) {
 
 // WriteFile implements FS
 func (m *memory) WriteFile(name string, data []byte, perm os.FileMode) error {
+	name = m.normalizePath(name)
 	file, ok := m.fs[name]
 	if !ok {
 		file = &fstest.MapFile{}
@@ -254,6 +262,7 @@ func (m *memory) WriteFile(name string, data []byte, perm os.FileMode) error {
 
 // Exists implements FS
 func (m *memory) Exists(path string) (bool, error) {
+	path = m.normalizePath(path)
 	_, ok := m.fs[path]
 	return ok, nil
 }
@@ -284,6 +293,7 @@ func (m *memory) Mkdir(path string, perm fs.FileMode) error {
 	// check each ancestor path
 	for i := 0; i < len(fp.Segments); i++ {
 		currentPath := accumulator.String(m.processor.Separator())
+		currentPath = m.normalizePath(currentPath)
 		_, ok := m.fs[currentPath]
 		if !ok {
 			return errNotExist(currentPath)
@@ -315,6 +325,7 @@ func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
 	// create each ancestor path
 	for i := 0; i < len(fp.Segments); i++ {
 		currentPath := accumulator.String(m.processor.Separator())
+		currentPath = m.normalizePath(currentPath)
 		_, ok := m.fs[currentPath]
 		if !ok {
 			m.fs[currentPath] = &fstest.MapFile{

@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/patrickhuber/go-xplat/filepath"
@@ -181,6 +182,23 @@ func TestCanWriteFile(t *testing.T) {
 		require.Equal(t, "test", string(buf))
 		require.Nil(t, file.Close())
 	}
+}
+
+func TestWindowsWillNormalizePath(t *testing.T) {
+	fs, path := setup(platform.Windows)
+	folder := `c:\ProgramData\fake\folder`
+	file := `test.txt`
+
+	err := fs.MkdirAll(folder, 0666)
+	require.Nil(t, err)
+
+	err = fs.WriteFile(path.Join(folder, file), []byte("content"), 0666)
+	require.Nil(t, err)
+
+	lower := strings.ToLower(path.Join(folder, file))
+	ok, err := fs.Exists(lower)
+	require.Nil(t, err)
+	require.True(t, ok)
 }
 
 func setup(plat platform.Platform) (fs.FS, filepath.Processor) {

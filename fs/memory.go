@@ -141,18 +141,45 @@ func (m *memory) OpenFile(name string, mode int, perm fs.FileMode) (File, error)
 	}, nil
 }
 
+func (m *memory) toString(path filepath.FilePath) string {
+	p := path.String(m.processor.Separator())
+	return m.normalizePath(p)
+}
+
+func (m *memory) lookup(path filepath.FilePath) (*fstest.MapFile, bool) {
+	p := m.toString(path)
+	file, ok := m.fs[p]
+	return file, ok
+}
+
+func (m *memory) remove(path filepath.FilePath) {
+	p := m.toString(path)
+	delete(m.fs, p)
+}
+
+func (m *memory) set(path filepath.FilePath, file *fstest.MapFile) {
+	p := m.toString(path)
+	m.fs[p] = file
+}
+
 // Rename implements FS
 func (m *memory) Rename(oldPath string, newPath string) error {
+	op, err := m.processor.Parser().Parse(oldPath)
+	if err != nil {
+		return err
+	}
 
-	oldPath = m.normalizePath(oldPath)
-	newPath = m.normalizePath(newPath)
+	np, err := m.processor.Parser().Parse(newPath)
+	if err != nil {
+		return err
+	}
 
-	file, ok := m.fs[oldPath]
+	file, ok := m.lookup(op)
 	if !ok {
 		return os.ErrNotExist
 	}
-	delete(m.fs, oldPath)
-	m.fs[newPath] = file
+	m.remove(op)
+	m.set(np, file)
 	return nil
 }
 
@@ -249,22 +276,33 @@ func (m *memory) ReadFile(name string) ([]byte, error) {
 
 // WriteFile implements FS
 func (m *memory) WriteFile(name string, data []byte, perm os.FileMode) error {
-	name = m.normalizePath(name)
-	file, ok := m.fs[name]
-	if !ok {
-		file = &fstest.MapFile{}
-		m.fs[name] = file
+	fp, err := m.processor.Parser().Parse(name)
+	if err != nil {
+		return err
 	}
-	file.Data = data
-	file.Mode = perm
+	f, ok := m.lookup(fp)
+	if !ok {
+		f = &fstest.MapFile{}
+		m.set(fp, f)
+	}
+	f.Data = data
+	f.Mode = perm
 	return nil
 }
 
 // Exists implements FS
 func (m *memory) Exists(path string) (bool, error) {
-	path = m.normalizePath(path)
-	_, ok := m.fs[path]
-	return ok, nil
+	fp, err := m.processor.Parser().Parse(path)
+	if err != nil {
+		return false, err
+	}
+	return m.exists(fp), nil
+}
+
+func (m *memory) exists(fp filepath.FilePath) bool {
+	// reform the path with the accepted separator
+	_, ok := m.lookup(fp)
+	return ok
 }
 
 // Stat implements FS
@@ -292,11 +330,9 @@ func (m *memory) Mkdir(path string, perm fs.FileMode) error {
 
 	// check each ancestor path
 	for i := 0; i < len(fp.Segments); i++ {
-		currentPath := accumulator.String(m.processor.Separator())
-		currentPath = m.normalizePath(currentPath)
-		_, ok := m.fs[currentPath]
+		ok := m.exists(accumulator)
 		if !ok {
-			return errNotExist(currentPath)
+			return errNotExist(path)
 		}
 		seg := fp.Segments[i]
 		fpseg, err := m.processor.Parser().Parse(seg)
@@ -307,10 +343,9 @@ func (m *memory) Mkdir(path string, perm fs.FileMode) error {
 	}
 
 	// write the segment
-	m.fs[path] = &fstest.MapFile{
+	m.set(fp, &fstest.MapFile{
 		Mode: perm | fs.ModeDir,
-	}
-
+	})
 	return nil
 }
 
@@ -324,13 +359,11 @@ func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
 
 	// create each ancestor path
 	for i := 0; i < len(fp.Segments); i++ {
-		currentPath := accumulator.String(m.processor.Separator())
-		currentPath = m.normalizePath(currentPath)
-		_, ok := m.fs[currentPath]
+		ok := m.exists(accumulator)
 		if !ok {
-			m.fs[currentPath] = &fstest.MapFile{
+			m.set(accumulator, &fstest.MapFile{
 				Mode: perm | fs.ModeDir,
-			}
+			})
 		}
 		seg := fp.Segments[i]
 		fpseg, err := m.processor.Parser().Parse(seg)
@@ -340,11 +373,9 @@ func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
 		accumulator = accumulator.Join(fpseg)
 	}
 
-	// create the path
-	m.fs[path] = &fstest.MapFile{
+	m.set(fp, &fstest.MapFile{
 		Mode: perm | fs.ModeDir,
-	}
-
+	})
 	return nil
 }
 

@@ -64,6 +64,7 @@ func (fp FilePath) isUNC() bool {
 	return fp.Volume.Host.HasValue
 }
 
+// Root returns the root of the file path without segments
 func (fp FilePath) Root() FilePath {
 	return FilePath{
 		Volume:   fp.Volume,

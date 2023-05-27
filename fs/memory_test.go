@@ -15,8 +15,7 @@ import (
 
 func TestMkdirCreatesRootUnix(t *testing.T) {
 	path := "/"
-	parser := filepath.NewParserWithPlatform(platform.Linux)
-	processor := filepath.NewProcessor(filepath.WithParser(parser))
+	processor := filepath.NewProcessorWithPlatform(platform.Linux)
 	f := fs.NewMemory(fs.WithProcessor(processor))
 	err := f.Mkdir(path, 0666)
 	require.Nil(t, err)
@@ -195,8 +194,15 @@ func TestWindowsWillNormalizePath(t *testing.T) {
 	err = fs.WriteFile(path.Join(folder, file), []byte("content"), 0666)
 	require.Nil(t, err)
 
+	// lower case should not matter
 	lower := strings.ToLower(path.Join(folder, file))
 	ok, err := fs.Exists(lower)
+	require.Nil(t, err)
+	require.True(t, ok)
+
+	// forward slashes should be the same as backward slashes
+	forward := strings.ReplaceAll(path.Join(folder, file), `\`, "/")
+	ok, err = fs.Exists(forward)
 	require.Nil(t, err)
 	require.True(t, ok)
 }

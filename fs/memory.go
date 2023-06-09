@@ -42,11 +42,6 @@ func WithPlatform(plat platform.Platform) MemoryOption {
 	return func(m *memory) {
 		m.processor = filepath.NewProcessorWithPlatform(plat)
 		m.fs = fstest.MapFS{}
-		if plat.IsUnix() {
-			m.Mkdir("/", 0666)
-		} else {
-			m.Mkdir(`c:\`, 0666)
-		}
 	}
 }
 
@@ -100,6 +95,22 @@ func (m *memory) Open(name string) (fs.File, error) {
 	}, nil
 }
 
+func isReadOnly(mode int) bool {
+	switch {
+	case mode&os.O_APPEND == os.O_APPEND:
+		return false
+	case mode&os.O_CREATE == os.O_CREATE:
+		return false
+	case mode&os.O_TRUNC == os.O_CREATE:
+		return false
+	case mode&os.O_WRONLY == os.O_WRONLY:
+		return false
+	case mode&os.O_RDWR == os.O_RDWR:
+		return false
+	}
+	return true
+}
+
 // OpenFile implements OpenFS
 func (m *memory) OpenFile(name string, mode int, perm fs.FileMode) (File, error) {
 	op := "openFile"
@@ -108,16 +119,17 @@ func (m *memory) OpenFile(name string, mode int, perm fs.FileMode) (File, error)
 
 	f, ok := m.fs[name]
 	if !ok {
-		if mode&os.O_RDONLY != 0 {
+		// for readonly files, if the file doesn't exist return an error
+		if isReadOnly(mode) {
 			return nil, &fs.PathError{
 				Op:   op,
 				Path: original,
 				Err:  fs.ErrNotExist,
 			}
-		} else {
-			f = &fstest.MapFile{}
-			m.fs[name] = f
 		}
+
+		f = &fstest.MapFile{}
+		m.fs[name] = f
 	}
 
 	// truncate if O_TRUNC specified

@@ -1,207 +1,105 @@
 package fs_test
 
 import (
-	"io"
-	"os"
-	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/patrickhuber/go-xplat/filepath"
 	"github.com/patrickhuber/go-xplat/fs"
 	"github.com/patrickhuber/go-xplat/platform"
-	"github.com/stretchr/testify/require"
 )
 
-func TestMkdirCreatesRootUnix(t *testing.T) {
-	path := "/"
-	parser := filepath.NewParserWithPlatform(platform.Linux)
-	processor := filepath.NewProcessor(filepath.WithParser(parser))
-	f := fs.NewMemory(fs.WithProcessor(processor))
-	err := f.Mkdir(path, 0666)
-	require.Nil(t, err)
-	ok, err := f.Exists(path)
-	require.Nil(t, err)
-	require.True(t, ok)
+func TestMemoryMkdirCreatesRootUnix(t *testing.T) {
+	NewConformanceWithPath(setupMemory(platform.Linux)).TestMkdirCreatesRoot(t, "/")
 }
 
-func TestMkdirFailsWhenRootNotExists(t *testing.T) {
-	path := "/test"
-	processor := filepath.NewProcessorWithPlatform(platform.Linux)
-	f := fs.NewMemory(fs.WithProcessor(processor))
-	err := f.Mkdir(path, 0666)
-	require.NotNil(t, err)
+func TestMemoryMkdirFailsWhenRootNotExists(t *testing.T) {
+	NewConformanceWithPath(setupMemory(platform.Linux)).TestMkdirFailsWhenRootNotExists(t, "/test")
 }
 
-func TestMkdirAllCreatesAllDirectories(t *testing.T) {
-	path := "/gran/parent/child"
-	f, _ := setup(platform.Linux)
-	err := f.MkdirAll(path, 0666)
-	require.Nil(t, err)
-	paths := []string{
+func TestMemoryMkdirAllCreatesAllDirectories(t *testing.T) {
+	NewConformanceWithPath(setupMemory(platform.Linux)).TestMkdirAllCreatesAllDirectories(t, "/gran/parent/child", []string{
 		"/",
 		"/gran",
 		"/gran/parent",
 		"/gran/parent/child",
-	}
-	for _, p := range paths {
-		ok, err := f.Exists(p)
-		require.Nil(t, err)
-		require.True(t, ok, "%s does not exist", p)
-	}
+	})
 }
 
-func TestWriteFile(t *testing.T) {
-	path := "/gran/parent/child"
-	processor := filepath.NewProcessorWithPlatform(platform.Linux)
-	filep := processor.Join(path, "file.txt")
-	f := fs.NewMemory(fs.WithProcessor(processor))
-	err := f.MkdirAll(path, 0666)
-	require.Nil(t, err)
-
-	// create the file
-	err = f.WriteFile(filep, []byte("file"), 0600)
-	require.Nil(t, err)
-
-	// read the file
-	content, err := f.ReadFile(filep)
-	require.Nil(t, err)
-	require.Equal(t, "file", string(content))
+func TestMemoryWriteFile(t *testing.T) {
+	NewConformanceWithPath(setupMemory(platform.Linux)).TestWriteFile(t, "/gran/parent/child", "file.txt", "file")
 }
 
-func TestWrite(t *testing.T) {
-	folder := "/gran/parent/child"
-	fs, path := setup(platform.Linux)
-	type test struct {
-		name     string
-		data     []byte
-		offset   int64
-		write    []byte
-		expected string
-	}
-
-	tests := []test{
-		{"grow.txt", []byte("this is test data"), 4, []byte(" more data than expected"), "this is more data than expected"},
-		{"less.txt", []byte("this is test data"), 8, []byte("also"), "this is also data"},
-		{"end.txt", []byte("this is test data"), 13, []byte("info"), "this is test info"},
-	}
-
-	err := fs.MkdirAll(folder, 0666)
-	require.Nil(t, err)
-
-	for _, test := range tests {
-		full := path.Join(folder, test.name)
-
-		f, err := fs.OpenFile(full, os.O_CREATE|os.O_RDWR, 0666)
-		require.Nil(t, err)
-
-		n, err := f.Write(test.data)
-		require.Nil(t, err)
-		require.Equal(t, len(test.data), n)
-
-		n64, err := f.Seek(test.offset, io.SeekStart)
-		require.Nil(t, err)
-		require.Equal(t, test.offset, n64)
-
-		n, err = f.Write(test.write)
-		require.Nil(t, err)
-		require.Equal(t, n, len(test.write))
-
-		require.Nil(t, f.Close())
-	}
+func TestMemoryWriteCanGrow(t *testing.T) {
+	NewConformanceWithPath(setupMemory(platform.Linux)).TestWrite(t,
+		"/gran/parent/child",
+		"grow.txt",
+		[]byte("this is test data"),
+		7,
+		[]byte(" more data than expected"),
+		[]byte("this is more data than expected"))
 }
 
-func TestReadDir(t *testing.T) {
-	path := "/gran/parent/child"
-	processor := filepath.NewProcessorWithPlatform(platform.Linux)
-	files := []string{"one.txt", "two.txt", "three.txt"}
-	f := fs.NewMemory(fs.WithProcessor(processor))
-	err := f.MkdirAll(path, 0666)
-	require.Nil(t, err)
-
-	// write the files
-	for _, file := range files {
-		filep := processor.Join(path, file)
-		err = f.WriteFile(filep, []byte(file), 0600)
-		require.Nil(t, err)
-	}
-
-	// list the files
-	entries, err := f.ReadDir(path)
-	require.Nil(t, err)
-	require.NotEmpty(t, entries)
-	require.Equal(t, len(files), len(entries))
-
-	// check the entry names and values
-	nameMatch, err := regexp.Compile(`^\w+.txt$`)
-	require.Nil(t, err)
-	for _, entry := range entries {
-		matched := nameMatch.MatchString(entry.Name())
-		require.True(t, matched, "name %s is not correct", entry.Name())
-	}
+func TestMemoryWriteCanOverwriteMiddle(t *testing.T) {
+	NewConformanceWithPath(setupMemory(platform.Linux)).TestWrite(t,
+		"/gran/parent/child",
+		"less.txt",
+		[]byte("this is test data"),
+		8,
+		[]byte("also"),
+		[]byte("this is also data"))
 }
 
-func TestCanCreateFile(t *testing.T) {
-	path := "/gran/parent/child"
-	processor := filepath.NewProcessorWithPlatform(platform.Linux)
-	files := []string{"one.txt", "two.txt", "three.txt"}
-	f := fs.NewMemory(fs.WithProcessor(processor))
-	err := f.MkdirAll(path, 0666)
-	require.Nil(t, err)
+func TestMemoryWriteCanOverwriteEnd(t *testing.T) {
+	NewConformanceWithPath(setupMemory(platform.Linux)).TestWrite(t,
+		"/gran/parent/child",
+		"end.txt",
+		[]byte("this is test data"),
+		13,
+		[]byte("info"),
+		[]byte("this is test info"))
 
-	// write the files
-	for _, file := range files {
-		filep := processor.Join(path, file)
-		file, err := f.Create(filep)
-		require.Nil(t, err)
-		require.NotNil(t, file)
-		require.Nil(t, file.Close())
-	}
 }
 
-func TestCanWriteFile(t *testing.T) {
-	f, processor := setup(platform.Linux)
-	path := "/gran/parent/child"
-	files := []string{"test.txt"}
-	err := f.MkdirAll(path, 0666)
-	require.Nil(t, err)
+func TestMemoryReadDir(t *testing.T) {
+	NewConformanceWithPath(setupMemory(platform.Linux)).
+		TestReadDir(t,
+			"/gran/parent/child", []file{
+				{"one.txt", []byte("one")},
+				{"two.txt", []byte("two")},
+				{"three.txt", []byte("three")},
+			})
+}
 
-	for _, file := range files {
-		filep := processor.Join(path, file)
-		file, err := f.Create(filep)
-		require.Nil(t, err)
-		require.NotNil(t, file)
-		_, err = file.Write([]byte("test"))
-		require.Nil(t, err)
-		require.Nil(t, file.Close())
-		ofile, err := f.Open(filep)
-		require.Nil(t, err)
-		buf := []byte("    ")
-		_, err = ofile.Read(buf)
-		require.Nil(t, err)
-		require.Equal(t, "test", string(buf))
-		require.Nil(t, file.Close())
-	}
+func TestMemoryCanCreateFile(t *testing.T) {
+	NewConformanceWithPath(setupMemory(platform.Linux)).
+		TestCanCreateFile(t, "/gran/parent/child", []file{
+			{"one.txt", []byte("one")},
+			{"two.txt", []byte("two")},
+			{"three.txt", []byte("three")},
+		})
+}
+
+func TestMemoryCanWriteFile(t *testing.T) {
+	NewConformanceWithPath(setupMemory(platform.Linux)).
+		TestCanWriteFile(t, "/gran/parent/child", []file{
+			{"one.txt", []byte("one")},
+			{"two.txt", []byte("two")},
+			{"three.txt", []byte("three")},
+		})
+}
+
+func TestMemoryOpenFileFailsWhenReadOnlyAndNotExists(t *testing.T) {
+	NewConformanceWithPath(setupMemory(platform.Linux)).
+		TestOpenFileFailsWhenNotExists(t, "/gran/parent/child", "/gran/parent/child/one.txt")
+
 }
 
 func TestWindowsWillNormalizePath(t *testing.T) {
-	fs, path := setup(platform.Windows)
-	folder := `c:\ProgramData\fake\folder`
-	file := `test.txt`
-
-	err := fs.MkdirAll(folder, 0666)
-	require.Nil(t, err)
-
-	err = fs.WriteFile(path.Join(folder, file), []byte("content"), 0666)
-	require.Nil(t, err)
-
-	lower := strings.ToLower(path.Join(folder, file))
-	ok, err := fs.Exists(lower)
-	require.Nil(t, err)
-	require.True(t, ok)
+	NewConformanceWithPath(setupMemory(platform.Windows)).
+		TestWindowsWillNormalizePath(t, `c:/ProgramData/fake/folder`, `test.txt`)
 }
 
-func setup(plat platform.Platform) (fs.FS, filepath.Processor) {
+func setupMemory(plat platform.Platform) (fs.FS, filepath.Processor) {
 	processor := filepath.NewProcessorWithPlatform(plat)
 	fs := fs.NewMemory(fs.WithProcessor(processor))
 	return fs, processor

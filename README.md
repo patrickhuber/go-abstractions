@@ -37,14 +37,14 @@ func main(){
 test
 ```
 
-### xstd
+### console
 
 ```go
 import(
-  "github.com/patrickhuber/go-xplat/xstd"
+  "github.com/patrickhuber/go-xplat/console"
 )  
 func main(){
-  c := xstd.NewOS()
+  c := console.NewOS()
   fmt.Fprintln(c.Out(), "hello world")
 }
 ```

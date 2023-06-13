@@ -192,6 +192,20 @@ func (c *conformance) TestWindowsWillNormalizePath(t *testing.T, folder string, 
 	require.True(t, ok)
 }
 
+func (c *conformance) TestWindowsFileForwardAndBackwardSlash(t *testing.T, filePath string) {
+	dir := c.path.Dir(filePath)
+	err := c.fs.MkdirAll(dir, 0666)
+	require.Nil(t, err)
+
+	backPath := strings.ReplaceAll(filePath, "/", "\\")
+	err = c.fs.WriteFile(backPath, []byte("test"), 0666)
+	require.Nil(t, err)
+
+	exists, err := c.fs.Exists(filePath)
+	require.Nil(t, err)
+	require.True(t, exists)
+}
+
 func (c *conformance) TestOpenFileFailsWhenNotExists(t *testing.T, folder string, file string) {
 	err := c.fs.MkdirAll(folder, 0666)
 	require.Nil(t, err)

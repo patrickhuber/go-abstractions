@@ -99,6 +99,11 @@ func TestWindowsWillNormalizePath(t *testing.T) {
 		TestWindowsWillNormalizePath(t, `c:/ProgramData/fake/folder`, `test.txt`)
 }
 
+func TestWindowsFileExists(t *testing.T) {
+	NewConformanceWithPath(setupMemory(platform.Windows)).
+		TestWindowsFileForwardAndBackwardSlash(t, "c:/ProgramData/fake/folder/test.txt")
+}
+
 func setupMemory(plat platform.Platform) (fs.FS, filepath.Processor) {
 	processor := filepath.NewProcessorWithPlatform(plat)
 	fs := fs.NewMemory(fs.WithProcessor(processor))

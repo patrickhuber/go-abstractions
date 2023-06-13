@@ -65,6 +65,15 @@ func (m *memory) Create(name string) (File, error) {
 	}, nil
 }
 
+func (m *memory) canonicalize(path string) (string, error) {
+	fp, err := m.processor.Parser().Parse(path)
+	if err != nil {
+		return "", err
+	}
+	path = fp.String(m.processor.Separator())
+	return m.normalizePath(path), nil
+}
+
 func (m *memory) normalizePath(name string) string {
 	if m.processor.Comparison() == filepath.IgnoreCase {
 		return strings.ToLower(name)
@@ -115,7 +124,11 @@ func isReadOnly(mode int) bool {
 func (m *memory) OpenFile(name string, mode int, perm fs.FileMode) (File, error) {
 	op := "openFile"
 	original := name
-	name = m.normalizePath(name)
+
+	name, err := m.canonicalize(name)
+	if err != nil {
+		return nil, err
+	}
 
 	f, ok := m.fs[name]
 	if !ok {
@@ -156,8 +169,17 @@ func (m *memory) OpenFile(name string, mode int, perm fs.FileMode) (File, error)
 // Rename implements FS
 func (m *memory) Rename(oldPath string, newPath string) error {
 
-	oldPath = m.normalizePath(oldPath)
-	newPath = m.normalizePath(newPath)
+	var err error
+
+	oldPath, err = m.canonicalize(oldPath)
+	if err != nil {
+		return err
+	}
+
+	newPath, err = m.canonicalize(newPath)
+	if err != nil {
+		return err
+	}
 
 	file, ok := m.fs[oldPath]
 	if !ok {
@@ -170,7 +192,10 @@ func (m *memory) Rename(oldPath string, newPath string) error {
 
 // Remove implements FS
 func (m *memory) Remove(path string) error {
-	path = m.normalizePath(path)
+	path, err := m.canonicalize(path)
+	if err != nil {
+		return err
+	}
 	_, ok := m.fs[path]
 	if !ok {
 		return os.ErrNotExist
@@ -261,21 +286,30 @@ func (m *memory) ReadFile(name string) ([]byte, error) {
 
 // WriteFile implements FS
 func (m *memory) WriteFile(name string, data []byte, perm os.FileMode) error {
-	name = m.normalizePath(name)
+	name, err := m.canonicalize(name)
+	if err != nil {
+		return err
+	}
+
 	file, ok := m.fs[name]
 	if !ok {
 		file = &fstest.MapFile{}
 		m.fs[name] = file
 	}
+
 	file.Data = data
 	file.Mode = perm
+
 	return nil
 }
 
 // Exists implements FS
 func (m *memory) Exists(path string) (bool, error) {
-	path = m.normalizePath(path)
-	_, ok := m.fs[path]
+	name, err := m.canonicalize(path)
+	if err != nil {
+		return false, err
+	}
+	_, ok := m.fs[name]
 	return ok, nil
 }
 
@@ -305,7 +339,10 @@ func (m *memory) Mkdir(path string, perm fs.FileMode) error {
 	// check each ancestor path
 	for i := 0; i < len(fp.Segments); i++ {
 		currentPath := accumulator.String(m.processor.Separator())
-		currentPath = m.normalizePath(currentPath)
+		currentPath, err = m.canonicalize(currentPath)
+		if err != nil {
+			return err
+		}
 		_, ok := m.fs[currentPath]
 		if !ok {
 			return errNotExist(currentPath)
@@ -335,15 +372,20 @@ func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
 	accumulator := fp.Root()
 
 	// create each ancestor path
-	for i := 0; i < len(fp.Segments); i++ {
+	for i := 0; i <= len(fp.Segments); i++ {
 		currentPath := accumulator.String(m.processor.Separator())
 		currentPath = m.normalizePath(currentPath)
 		_, ok := m.fs[currentPath]
+
 		if !ok {
 			m.fs[currentPath] = &fstest.MapFile{
 				Mode: perm | fs.ModeDir,
 			}
 		}
+		if i == len(fp.Segments) {
+			break
+		}
+
 		seg := fp.Segments[i]
 		fpseg, err := m.processor.Parser().Parse(seg)
 		if err != nil {
@@ -351,12 +393,6 @@ func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
 		}
 		accumulator = accumulator.Join(fpseg)
 	}
-
-	// create the path
-	m.fs[path] = &fstest.MapFile{
-		Mode: perm | fs.ModeDir,
-	}
-
 	return nil
 }
 

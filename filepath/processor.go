@@ -139,7 +139,7 @@ func (p *processor) abs(wd, rel string) (string, error) {
 		return "", err
 	}
 	if fp.IsAbs() {
-		return "", err
+		return rel, nil
 	}
 	wdp, err := p.parser.Parse(wd)
 	if err != nil {

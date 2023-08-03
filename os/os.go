@@ -8,6 +8,7 @@ import (
 
 type OS interface {
 	WorkingDirectory() (string, error)
+	ChangeDirectory(dir string) error
 	Platform() string
 	Architecture() string
 	Home() string
@@ -39,4 +40,8 @@ func (o *realOS) Architecture() string {
 func (o *realOS) Home() string {
 	dir, _ := os.UserHomeDir()
 	return dir
+}
+
+func (o *realOS) ChangeDirectory(dir string) error {
+	return os.Chdir(dir)
 }

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/patrickhuber/go-xplat/filepath"
+	"github.com/patrickhuber/go-xplat/os"
 	"github.com/patrickhuber/go-xplat/platform"
 	"github.com/stretchr/testify/require"
 )
@@ -400,4 +401,42 @@ func TestBase(t *testing.T) {
 	}
 	run(basetests, "basetests", platform.Linux)
 	run(winbasetests, "winbasetests", platform.Windows)
+}
+
+func TestAbs(t *testing.T) {
+	var absDirs = []string{
+		"a",
+		"a/b",
+		"a/b/c",
+	}
+	var relPaths = []string{
+		".",
+		"b",
+		"b/",
+		"../a",
+		"../a/b",
+		"../a/b/./c/../../.././a",
+		"../a/b/./c/../../.././a/",
+		//"$",
+		//"$/.",
+		//"$/a/../a/b",
+		//"$/a/b/c/../../.././a",
+		//"$/a/b/c/../../.././a/",
+	}
+	run := func(name string, abs, rel []string, plat platform.Platform) {
+		t.Run(name, func(t *testing.T) {
+			for _, a := range abs {
+				for _, r := range rel {
+					o := os.NewMock(os.WithWorkingDirectory(a))
+					path := filepath.NewProcessorWithPlatform(plat, filepath.WithOS(o))
+					result, err := path.Abs(r)
+					require.NoError(t, err)
+					require.NotEmpty(t, result)
+				}
+			}
+		})
+	}
+	run("abs_linux", absDirs, relPaths, platform.Linux)
+	run("abs_darwin", absDirs, relPaths, platform.Darwin)
+	run("abs_windows", absDirs, relPaths, platform.Windows)
 }

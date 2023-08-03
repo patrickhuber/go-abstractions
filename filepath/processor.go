@@ -3,6 +3,7 @@ package filepath
 import (
 	"regexp"
 
+	"github.com/patrickhuber/go-xplat/os"
 	"github.com/patrickhuber/go-xplat/platform"
 )
 
@@ -38,6 +39,10 @@ type BasePath interface {
 	Base(path string) string
 }
 
+type AbsPath interface {
+	Abs(path string) (string, error)
+}
+
 type Processor interface {
 	JoinPath
 	RelPath
@@ -47,6 +52,7 @@ type Processor interface {
 	DirPath
 	ExtPath
 	BasePath
+	AbsPath
 	Separator() PathSeparator
 	Parser() Parser
 	Comparison() Comparison
@@ -54,6 +60,7 @@ type Processor interface {
 
 type processor struct {
 	platform platform.Platform
+	os       os.OS
 	sep      PathSeparator
 	parser   Parser
 	cmp      Comparison
@@ -79,6 +86,12 @@ func WithComparison(cmp Comparison) ProcessorOption {
 	}
 }
 
+func WithOS(os os.OS) ProcessorOption {
+	return func(p *processor) {
+		p.os = os
+	}
+}
+
 // NewProcessor creates a processor with the default platform and then applies the options
 func NewProcessor(options ...ProcessorOption) Processor {
 	return NewProcessorWithPlatform(platform.Default(), options...)
@@ -86,6 +99,7 @@ func NewProcessor(options ...ProcessorOption) Processor {
 
 // NewProcessorWithPlatform creates a platform specific processor and then applies the given options
 func NewProcessorWithPlatform(plat platform.Platform, options ...ProcessorOption) Processor {
+
 	p := &processor{
 		parser:   NewParserWithPlatform(plat),
 		platform: plat,
@@ -103,7 +117,36 @@ func NewProcessorWithPlatform(plat platform.Platform, options ...ProcessorOption
 		option(p)
 	}
 
+	// set the default OS so we can use the working directory wrapper
+	if p.os == nil {
+		p.os = os.New()
+	}
+
 	return p
+}
+
+func (p *processor) Abs(path string) (string, error) {
+	wd, err := p.os.WorkingDirectory()
+	if err != nil {
+		return "", err
+	}
+	return p.abs(wd, path)
+}
+
+func (p *processor) abs(wd, rel string) (string, error) {
+	fp, err := p.parser.Parse(rel)
+	if err != nil {
+		return "", err
+	}
+	if fp.IsAbs() {
+		return "", err
+	}
+	wdp, err := p.parser.Parse(wd)
+	if err != nil {
+		return "", err
+	}
+	abs := wdp.Join(fp)
+	return p.String(abs.Clean()), nil
 }
 
 // Join implements Processor

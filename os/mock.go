@@ -104,3 +104,8 @@ func (o *mockOS) Architecture() string {
 func (o *mockOS) Home() string {
 	return o.homeDirectory
 }
+
+func (o *mockOS) ChangeDirectory(dir string) error {
+	o.workingDirectory = dir
+	return nil
+}

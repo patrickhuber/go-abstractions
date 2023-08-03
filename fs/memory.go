@@ -8,12 +8,11 @@ import (
 	fstest "testing/fstest"
 
 	"github.com/patrickhuber/go-xplat/filepath"
-	"github.com/patrickhuber/go-xplat/platform"
 )
 
 type memory struct {
 	fs        fstest.MapFS
-	processor filepath.Processor
+	processor *filepath.Processor
 }
 
 func NewMemory(options ...MemoryOption) FS {
@@ -32,16 +31,9 @@ func NewMemory(options ...MemoryOption) FS {
 
 type MemoryOption = func(*memory)
 
-func WithProcessor(processor filepath.Processor) MemoryOption {
+func WithProcessor(processor *filepath.Processor) MemoryOption {
 	return func(m *memory) {
 		m.processor = processor
-	}
-}
-
-func WithPlatform(plat platform.Platform) MemoryOption {
-	return func(m *memory) {
-		m.processor = filepath.NewProcessorWithPlatform(plat)
-		m.fs = fstest.MapFS{}
 	}
 }
 
@@ -66,16 +58,16 @@ func (m *memory) Create(name string) (File, error) {
 }
 
 func (m *memory) canonicalize(path string) (string, error) {
-	fp, err := m.processor.Parser().Parse(path)
+	fp, err := m.processor.Parser.Parse(path)
 	if err != nil {
 		return "", err
 	}
-	path = fp.String(m.processor.Separator())
+	path = fp.String(m.processor.Separator)
 	return m.normalizePath(path), nil
 }
 
 func (m *memory) normalizePath(name string) string {
-	if m.processor.Comparison() == filepath.IgnoreCase {
+	if m.processor.Comparison == filepath.IgnoreCase {
 		return strings.ToLower(name)
 	}
 	return name
@@ -238,7 +230,7 @@ func (m *memory) ReadDir(name string) ([]fs.DirEntry, error) {
 	for path, file := range m.fs {
 		originalPath := path
 		// make sure both are lowered if case insensitive
-		if m.processor.Comparison() == filepath.IgnoreCase {
+		if m.processor.Comparison == filepath.IgnoreCase {
 			path = strings.ToLower(path)
 			name = strings.ToLower(name)
 		}
@@ -330,7 +322,7 @@ func (m *memory) Sub(dir string) (fs.FS, error) {
 
 // Mkdir implements MakeDirFS
 func (m *memory) Mkdir(path string, perm fs.FileMode) error {
-	fp, err := m.processor.Parser().Parse(path)
+	fp, err := m.processor.Parser.Parse(path)
 	if err != nil {
 		return err
 	}
@@ -338,7 +330,7 @@ func (m *memory) Mkdir(path string, perm fs.FileMode) error {
 
 	// check each ancestor path
 	for i := 0; i < len(fp.Segments); i++ {
-		currentPath := accumulator.String(m.processor.Separator())
+		currentPath := accumulator.String(m.processor.Separator)
 		currentPath, err = m.canonicalize(currentPath)
 		if err != nil {
 			return err
@@ -348,7 +340,7 @@ func (m *memory) Mkdir(path string, perm fs.FileMode) error {
 			return errNotExist(currentPath)
 		}
 		seg := fp.Segments[i]
-		fpseg, err := m.processor.Parser().Parse(seg)
+		fpseg, err := m.processor.Parser.Parse(seg)
 		if err != nil {
 			return err
 		}
@@ -365,7 +357,7 @@ func (m *memory) Mkdir(path string, perm fs.FileMode) error {
 
 // MkdirAll implements MakeDirFS
 func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
-	fp, err := m.processor.Parser().Parse(path)
+	fp, err := m.processor.Parser.Parse(path)
 	if err != nil {
 		return err
 	}
@@ -373,7 +365,7 @@ func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
 
 	// create each ancestor path
 	for i := 0; i <= len(fp.Segments); i++ {
-		currentPath := accumulator.String(m.processor.Separator())
+		currentPath := accumulator.String(m.processor.Separator)
 		currentPath = m.normalizePath(currentPath)
 		_, ok := m.fs[currentPath]
 
@@ -387,7 +379,7 @@ func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
 		}
 
 		seg := fp.Segments[i]
-		fpseg, err := m.processor.Parser().Parse(seg)
+		fpseg, err := m.processor.Parser.Parse(seg)
 		if err != nil {
 			return err
 		}

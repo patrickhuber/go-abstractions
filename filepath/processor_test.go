@@ -5,7 +5,6 @@ import (
 
 	"github.com/patrickhuber/go-xplat/filepath"
 	"github.com/patrickhuber/go-xplat/os"
-	"github.com/patrickhuber/go-xplat/platform"
 	"github.com/stretchr/testify/require"
 )
 
@@ -50,7 +49,8 @@ func TestJoin(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		processor := filepath.NewProcessor(filepath.WithSeparator(test.sep))
+		processor := filepath.NewProcessor()
+		processor.Separator = test.sep
 		actual := processor.Join(test.elements...)
 		require.Equal(t, test.result, actual)
 	}
@@ -91,7 +91,8 @@ func TestRoot(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		processor := filepath.NewProcessor(filepath.WithSeparator(test.sep))
+		processor := filepath.NewProcessor()
+		processor.Separator = test.sep
 		actual := processor.Root(test.path)
 		require.Equal(t, test.expected, actual)
 	}
@@ -158,8 +159,8 @@ func TestRel(t *testing.T) {
 		{`\\host\share\folder`, `\\other\test\share`, `err`},
 	}
 
-	run := func(tests []test, name string, plat platform.Platform) {
-		processor := filepath.NewProcessorWithPlatform(plat)
+	run := func(tests []test, name string, o os.OS) {
+		processor := filepath.NewProcessorWithOS(o)
 		for i, test := range tests {
 
 			actual, err := processor.Rel(test.source, test.target)
@@ -171,8 +172,8 @@ func TestRel(t *testing.T) {
 				name, i, test.source, test.target, test.expected, actual)
 		}
 	}
-	run(reltests, "reltests", platform.Linux)
-	run(winreltests, "winreltests", platform.Windows)
+	run(reltests, "reltests", os.NewLinuxMock())
+	run(winreltests, "winreltests", os.NewWindowsMock())
 }
 
 func TestClean(t *testing.T) {
@@ -275,8 +276,8 @@ func TestClean(t *testing.T) {
 		{`foo:bar`, `foo:bar`},
 	}
 
-	run := func(tests []test, name string, plat platform.Platform) {
-		processor := filepath.NewProcessorWithPlatform(plat)
+	run := func(tests []test, name string, o os.OS) {
+		processor := filepath.NewProcessorWithOS(o)
 		for i, test := range tests {
 			actual := processor.Clean(test.path)
 			require.Equal(t, test.expected, actual,
@@ -284,9 +285,9 @@ func TestClean(t *testing.T) {
 		}
 	}
 
-	run(cleantests, "cleantests", platform.Linux)
-	run(nonwincleantests, "nonwincleantests", platform.Linux)
-	run(wincleantests, "wincleantests", platform.Windows)
+	run(cleantests, "cleantests", os.NewLinuxMock())
+	run(nonwincleantests, "nonwincleantests", os.NewLinuxMock())
+	run(wincleantests, "wincleantests", os.NewWindowsMock())
 }
 
 func TestDir(t *testing.T) {
@@ -327,8 +328,8 @@ func TestDir(t *testing.T) {
 		{`\\\\`, `\\\\`},
 	}
 
-	run := func(tests []test, name string, plat platform.Platform) {
-		processor := filepath.NewProcessorWithPlatform(plat)
+	run := func(tests []test, name string, o os.OS) {
+		processor := filepath.NewProcessorWithOS(o)
 		for i, test := range tests {
 			actual := processor.Dir(test.path)
 			require.Equal(t, test.expected, actual,
@@ -337,9 +338,9 @@ func TestDir(t *testing.T) {
 		}
 	}
 
-	run(dirtests, "dirtests", platform.Linux)
-	run(nonwindirtests, "nonwindirtests", platform.Linux)
-	run(windirtests, "windirtests", platform.Windows)
+	run(dirtests, "dirtests", os.NewLinuxMock())
+	run(nonwindirtests, "nonwindirtests", os.NewLinuxMock())
+	run(windirtests, "windirtests", os.NewWindowsMock())
 }
 
 func TestExt(t *testing.T) {
@@ -391,16 +392,16 @@ func TestBase(t *testing.T) {
 		{`\\host\share\a`, `a`},
 		{`\\host\share\a\b`, `b`},
 	}
-	run := func(tests []test, name string, plat platform.Platform) {
-		processor := filepath.NewProcessorWithPlatform(plat)
+	run := func(tests []test, name string, o os.OS) {
+		processor := filepath.NewProcessorWithOS(o)
 		for i, test := range tests {
 			actual := processor.Base(test.path)
 			require.Equal(t, test.expected, actual,
 				"%s[%d] given: '%s' expected: '%s' actual: '%s'", name, i, test.path, test.expected, actual)
 		}
 	}
-	run(basetests, "basetests", platform.Linux)
-	run(winbasetests, "winbasetests", platform.Windows)
+	run(basetests, "basetests", os.NewLinuxMock())
+	run(winbasetests, "winbasetests", os.NewWindowsMock())
 }
 
 func TestAbs(t *testing.T) {
@@ -423,12 +424,12 @@ func TestAbs(t *testing.T) {
 		//"$/a/b/c/../../.././a",
 		//"$/a/b/c/../../.././a/",
 	}
-	run := func(name string, abs, rel []string, plat platform.Platform) {
+	run := func(name string, abs, rel []string, o os.OS) {
 		t.Run(name, func(t *testing.T) {
 			for _, a := range abs {
+				o.ChangeDirectory(a)
 				for _, r := range rel {
-					o := os.NewMock(os.WithWorkingDirectory(a))
-					path := filepath.NewProcessorWithPlatform(plat, filepath.WithOS(o))
+					path := filepath.NewProcessorWithOS(o)
 					result, err := path.Abs(r)
 					require.NoError(t, err)
 					require.NotEmpty(t, result)
@@ -436,7 +437,7 @@ func TestAbs(t *testing.T) {
 			}
 		})
 	}
-	run("abs_linux", absDirs, relPaths, platform.Linux)
-	run("abs_darwin", absDirs, relPaths, platform.Darwin)
-	run("abs_windows", absDirs, relPaths, platform.Windows)
+	run("abs_linux", absDirs, relPaths, os.NewLinuxMock())
+	run("abs_darwin", absDirs, relPaths, os.NewDarwinMock())
+	run("abs_windows", absDirs, relPaths, os.NewWindowsMock())
 }

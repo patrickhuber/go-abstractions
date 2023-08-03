@@ -5,19 +5,19 @@ import (
 
 	"github.com/patrickhuber/go-xplat/filepath"
 	"github.com/patrickhuber/go-xplat/fs"
-	"github.com/patrickhuber/go-xplat/platform"
+	"github.com/patrickhuber/go-xplat/os"
 )
 
 func TestMemoryMkdirCreatesRootUnix(t *testing.T) {
-	NewConformanceWithPath(setupMemory(platform.Linux)).TestMkdirCreatesRoot(t, "/")
+	NewConformanceWithPath(setupMemory(os.NewLinuxMock())).TestMkdirCreatesRoot(t, "/")
 }
 
 func TestMemoryMkdirFailsWhenRootNotExists(t *testing.T) {
-	NewConformanceWithPath(setupMemory(platform.Linux)).TestMkdirFailsWhenRootNotExists(t, "/test")
+	NewConformanceWithPath(setupMemory(os.NewLinuxMock())).TestMkdirFailsWhenRootNotExists(t, "/test")
 }
 
 func TestMemoryMkdirAllCreatesAllDirectories(t *testing.T) {
-	NewConformanceWithPath(setupMemory(platform.Linux)).TestMkdirAllCreatesAllDirectories(t, "/gran/parent/child", []string{
+	NewConformanceWithPath(setupMemory(os.NewLinuxMock())).TestMkdirAllCreatesAllDirectories(t, "/gran/parent/child", []string{
 		"/",
 		"/gran",
 		"/gran/parent",
@@ -26,11 +26,11 @@ func TestMemoryMkdirAllCreatesAllDirectories(t *testing.T) {
 }
 
 func TestMemoryWriteFile(t *testing.T) {
-	NewConformanceWithPath(setupMemory(platform.Linux)).TestWriteFile(t, "/gran/parent/child", "file.txt", "file")
+	NewConformanceWithPath(setupMemory(os.NewLinuxMock())).TestWriteFile(t, "/gran/parent/child", "file.txt", "file")
 }
 
 func TestMemoryWriteCanGrow(t *testing.T) {
-	NewConformanceWithPath(setupMemory(platform.Linux)).TestWrite(t,
+	NewConformanceWithPath(setupMemory(os.NewLinuxMock())).TestWrite(t,
 		"/gran/parent/child",
 		"grow.txt",
 		[]byte("this is test data"),
@@ -40,7 +40,7 @@ func TestMemoryWriteCanGrow(t *testing.T) {
 }
 
 func TestMemoryWriteCanOverwriteMiddle(t *testing.T) {
-	NewConformanceWithPath(setupMemory(platform.Linux)).TestWrite(t,
+	NewConformanceWithPath(setupMemory(os.NewLinuxMock())).TestWrite(t,
 		"/gran/parent/child",
 		"less.txt",
 		[]byte("this is test data"),
@@ -50,7 +50,7 @@ func TestMemoryWriteCanOverwriteMiddle(t *testing.T) {
 }
 
 func TestMemoryWriteCanOverwriteEnd(t *testing.T) {
-	NewConformanceWithPath(setupMemory(platform.Linux)).TestWrite(t,
+	NewConformanceWithPath(setupMemory(os.NewLinuxMock())).TestWrite(t,
 		"/gran/parent/child",
 		"end.txt",
 		[]byte("this is test data"),
@@ -61,7 +61,7 @@ func TestMemoryWriteCanOverwriteEnd(t *testing.T) {
 }
 
 func TestMemoryReadDir(t *testing.T) {
-	NewConformanceWithPath(setupMemory(platform.Linux)).
+	NewConformanceWithPath(setupMemory(os.NewLinuxMock())).
 		TestReadDir(t,
 			"/gran/parent/child", []file{
 				{"one.txt", []byte("one")},
@@ -71,7 +71,7 @@ func TestMemoryReadDir(t *testing.T) {
 }
 
 func TestMemoryCanCreateFile(t *testing.T) {
-	NewConformanceWithPath(setupMemory(platform.Linux)).
+	NewConformanceWithPath(setupMemory(os.NewLinuxMock())).
 		TestCanCreateFile(t, "/gran/parent/child", []file{
 			{"one.txt", []byte("one")},
 			{"two.txt", []byte("two")},
@@ -80,7 +80,7 @@ func TestMemoryCanCreateFile(t *testing.T) {
 }
 
 func TestMemoryCanWriteFile(t *testing.T) {
-	NewConformanceWithPath(setupMemory(platform.Linux)).
+	NewConformanceWithPath(setupMemory(os.NewLinuxMock())).
 		TestCanWriteFile(t, "/gran/parent/child", []file{
 			{"one.txt", []byte("one")},
 			{"two.txt", []byte("two")},
@@ -89,23 +89,23 @@ func TestMemoryCanWriteFile(t *testing.T) {
 }
 
 func TestMemoryOpenFileFailsWhenReadOnlyAndNotExists(t *testing.T) {
-	NewConformanceWithPath(setupMemory(platform.Linux)).
+	NewConformanceWithPath(setupMemory(os.NewLinuxMock())).
 		TestOpenFileFailsWhenNotExists(t, "/gran/parent/child", "/gran/parent/child/one.txt")
 
 }
 
 func TestWindowsWillNormalizePath(t *testing.T) {
-	NewConformanceWithPath(setupMemory(platform.Windows)).
+	NewConformanceWithPath(setupMemory(os.NewWindowsMock())).
 		TestWindowsWillNormalizePath(t, `c:/ProgramData/fake/folder`, `test.txt`)
 }
 
 func TestWindowsFileExists(t *testing.T) {
-	NewConformanceWithPath(setupMemory(platform.Windows)).
+	NewConformanceWithPath(setupMemory(os.NewWindowsMock())).
 		TestWindowsFileForwardAndBackwardSlash(t, "c:/ProgramData/fake/folder/test.txt")
 }
 
-func setupMemory(plat platform.Platform) (fs.FS, filepath.Processor) {
-	processor := filepath.NewProcessorWithPlatform(plat)
+func setupMemory(o os.OS) (fs.FS, *filepath.Processor) {
+	processor := filepath.NewProcessorWithOS(o)
 	fs := fs.NewMemory(fs.WithProcessor(processor))
 	return fs, processor
 }

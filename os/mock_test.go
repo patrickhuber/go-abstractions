@@ -3,23 +3,25 @@ package os_test
 import (
 	"testing"
 
+	"github.com/patrickhuber/go-xplat/arch"
 	"github.com/patrickhuber/go-xplat/os"
+	"github.com/patrickhuber/go-xplat/platform"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPlatform(t *testing.T) {
 	type test struct {
-		expected string
+		expected platform.Platform
 		o        os.OS
 	}
 	tests := []test{
 		{expected: os.MockDarwinPlatform, o: os.NewDarwinMock()},
 		{expected: os.MockLinuxPlatform, o: os.NewLinuxMock()},
 		{expected: os.MockWindowsPlatform, o: os.NewWindowsMock()},
-		{expected: "plan9", o: os.NewMock(os.WithPlatform("plan9"))},
-		{expected: "plan9", o: os.NewDarwinMock(os.WithPlatform("plan9"))},
-		{expected: "plan9", o: os.NewLinuxMock(os.WithPlatform("plan9"))},
-		{expected: "plan9", o: os.NewWindowsMock(os.WithPlatform("plan9"))},
+		{expected: platform.Plan9, o: os.NewMock(os.WithPlatform("plan9"))},
+		{expected: platform.Plan9, o: os.NewDarwinMock(os.WithPlatform("plan9"))},
+		{expected: platform.Plan9, o: os.NewLinuxMock(os.WithPlatform("plan9"))},
+		{expected: platform.Plan9, o: os.NewWindowsMock(os.WithPlatform("plan9"))},
 	}
 	for _, test := range tests {
 		require.Equal(t, test.expected, test.o.Platform())
@@ -28,7 +30,7 @@ func TestPlatform(t *testing.T) {
 
 func TestArchitecture(t *testing.T) {
 	type test struct {
-		expected string
+		expected arch.Arch
 		o        os.OS
 	}
 	tests := []test{

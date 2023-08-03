@@ -130,8 +130,9 @@ func TestString(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		processor := filepath.NewProcessor(filepath.WithSeparator(test.sep))
-		actual := test.fp.String(processor.Separator())
+		processor := filepath.NewProcessor()
+		processor.Separator = test.sep
+		actual := test.fp.String(processor.Separator)
 		require.Equal(t, test.expected, actual, "failed test at [%d]", i)
 	}
 }
@@ -168,7 +169,8 @@ func TestVolumeName(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		processor := filepath.NewProcessor(filepath.WithSeparator(test.sep))
+		processor := filepath.NewProcessor()
+		processor.Separator = test.sep
 		actual := processor.VolumeName(test.path)
 		require.Equal(t, test.expected, actual)
 	}

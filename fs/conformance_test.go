@@ -14,7 +14,7 @@ import (
 
 type conformance struct {
 	fs   fs.FS
-	path filepath.Processor
+	path *filepath.Processor
 }
 
 type file struct {
@@ -28,7 +28,7 @@ func NewConformance(fs fs.FS) *conformance {
 	}
 }
 
-func NewConformanceWithPath(fs fs.FS, path filepath.Processor) *conformance {
+func NewConformanceWithPath(fs fs.FS, path *filepath.Processor) *conformance {
 	return &conformance{
 		fs:   fs,
 		path: path,

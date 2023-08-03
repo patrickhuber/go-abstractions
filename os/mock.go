@@ -1,26 +1,31 @@
 package os
 
-const (
-	MockAmd64Architecture = "amd64"
-	MockArm64Architecture = "arm64"
+import (
+	"github.com/patrickhuber/go-xplat/arch"
+	"github.com/patrickhuber/go-xplat/platform"
+)
 
-	MockWindowsPlatform         = "windows"
+const (
+	MockAmd64Architecture = arch.AMD64
+	MockArm64Architecture = arch.ARM64be
+
+	MockWindowsPlatform         = platform.Windows
 	MockWindowsWorkingDirectory = "c:\\working"
 	MockWindowsHomeDirectory    = "c:\\users\\fake"
 
-	MockLinuxPlatform         = "linux"
+	MockLinuxPlatform         = platform.Linux
 	MockLinuxWorkingDirectory = "/working"
 	MockLinuxHomeDirectory    = "/home/fake"
 
-	MockDarwinPlatform         = "darwin"
+	MockDarwinPlatform         = platform.Darwin
 	MockDarwinHomeDirectory    = MockLinuxHomeDirectory
 	MockDarwinWorkingDirectory = MockLinuxWorkingDirectory
 )
 
 type mockOS struct {
 	workingDirectory string
-	platform         string
-	architecture     string
+	platform         platform.Platform
+	architecture     arch.Arch
 	homeDirectory    string
 }
 
@@ -32,7 +37,7 @@ func WithHomeDirectory(homeDirectory string) MockOption {
 	}
 }
 
-func WithArchitecture(architecture string) MockOption {
+func WithArchitecture(architecture arch.Arch) MockOption {
 	return func(o *mockOS) {
 		o.architecture = architecture
 	}
@@ -44,7 +49,7 @@ func WithWorkingDirectory(workingDirectory string) MockOption {
 	}
 }
 
-func WithPlatform(platform string) MockOption {
+func WithPlatform(platform platform.Platform) MockOption {
 	return func(o *mockOS) {
 		o.platform = platform
 	}
@@ -93,11 +98,11 @@ func (o *mockOS) WorkingDirectory() (string, error) {
 	return o.workingDirectory, nil
 }
 
-func (o *mockOS) Platform() string {
-	return o.platform
+func (o *mockOS) Platform() platform.Platform {
+	return platform.Platform(o.platform)
 }
 
-func (o *mockOS) Architecture() string {
+func (o *mockOS) Architecture() arch.Arch {
 	return o.architecture
 }
 

@@ -4,13 +4,16 @@ package os
 import (
 	"os"
 	"runtime"
+
+	"github.com/patrickhuber/go-xplat/arch"
+	"github.com/patrickhuber/go-xplat/platform"
 )
 
 type OS interface {
 	WorkingDirectory() (string, error)
 	ChangeDirectory(dir string) error
-	Platform() string
-	Architecture() string
+	Platform() platform.Platform
+	Architecture() arch.Arch
 	Home() string
 }
 
@@ -29,12 +32,12 @@ func (o *realOS) Executable() (string, error) {
 	return os.Executable()
 }
 
-func (o *realOS) Platform() string {
-	return runtime.GOOS
+func (o *realOS) Platform() platform.Platform {
+	return platform.Platform(runtime.GOOS)
 }
 
-func (o *realOS) Architecture() string {
-	return runtime.GOARCH
+func (o *realOS) Architecture() arch.Arch {
+	return arch.Arch(runtime.GOARCH)
 }
 
 func (o *realOS) Home() string {

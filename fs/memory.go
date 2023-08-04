@@ -268,6 +268,9 @@ func (m *memory) ReadFile(name string) ([]byte, error) {
 	}
 
 	buf := make([]byte, stat.Size())
+	if len(buf) == 0 {
+		return buf, nil
+	}
 
 	_, err = f.Read(buf)
 	if err != nil {

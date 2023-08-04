@@ -30,7 +30,11 @@ func New() *Host {
 }
 
 func NewTest(p platform.Platform, a arch.Arch) *Host {
-	os := os.NewMock(os.WithPlatform(p), os.WithArchitecture(a))
+
+	os := os.NewMock(
+		os.WithArchitecture(a),
+		os.WithPlatform(p))
+
 	path := filepath.NewProcessorWithOS(os)
 	return &Host{
 		OS:      os,

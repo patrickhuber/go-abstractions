@@ -15,13 +15,13 @@ func TestPlatform(t *testing.T) {
 		o        os.OS
 	}
 	tests := []test{
-		{expected: os.MockDarwinPlatform, o: os.NewDarwinMock()},
-		{expected: os.MockLinuxPlatform, o: os.NewLinuxMock()},
-		{expected: os.MockWindowsPlatform, o: os.NewWindowsMock()},
-		{expected: platform.Plan9, o: os.NewMock(os.WithPlatform("plan9"))},
-		{expected: platform.Plan9, o: os.NewDarwinMock(os.WithPlatform("plan9"))},
-		{expected: platform.Plan9, o: os.NewLinuxMock(os.WithPlatform("plan9"))},
-		{expected: platform.Plan9, o: os.NewWindowsMock(os.WithPlatform("plan9"))},
+		{expected: os.MockDarwinPlatform, o: os.NewMock(os.WithPlatform(platform.Darwin))},
+		{expected: os.MockLinuxPlatform, o: os.NewMock(os.WithPlatform(platform.Linux))},
+		{expected: os.MockWindowsPlatform, o: os.NewMock(os.WithPlatform(platform.Windows))},
+		{expected: platform.Plan9, o: os.NewMock(os.WithPlatform(platform.Plan9))},
+		{expected: platform.Plan9, o: os.NewMock(os.WithPlatform(platform.Plan9))},
+		{expected: platform.Plan9, o: os.NewMock(os.WithPlatform(platform.Plan9))},
+		{expected: platform.Plan9, o: os.NewMock(os.WithPlatform(platform.Plan9))},
 	}
 	for _, test := range tests {
 		require.Equal(t, test.expected, test.o.Platform())
@@ -34,13 +34,13 @@ func TestArchitecture(t *testing.T) {
 		o        os.OS
 	}
 	tests := []test{
-		{expected: os.MockAmd64Architecture, o: os.NewDarwinMock()},
-		{expected: os.MockAmd64Architecture, o: os.NewLinuxMock()},
-		{expected: os.MockAmd64Architecture, o: os.NewWindowsMock()},
+		{expected: os.MockAmd64Architecture, o: os.NewMock(os.WithPlatform(platform.Darwin))},
+		{expected: os.MockAmd64Architecture, o: os.NewMock(os.WithPlatform(platform.Linux))},
+		{expected: os.MockAmd64Architecture, o: os.NewMock(os.WithPlatform(platform.Windows))},
 		{expected: os.MockArm64Architecture, o: os.NewMock(os.WithArchitecture(os.MockArm64Architecture))},
-		{expected: os.MockArm64Architecture, o: os.NewWindowsMock(os.WithArchitecture(os.MockArm64Architecture))},
-		{expected: os.MockArm64Architecture, o: os.NewLinuxMock(os.WithArchitecture(os.MockArm64Architecture))},
-		{expected: os.MockArm64Architecture, o: os.NewDarwinMock(os.WithArchitecture(os.MockArm64Architecture))},
+		{expected: os.MockArm64Architecture, o: os.NewMock(os.WithArchitecture(os.MockArm64Architecture))},
+		{expected: os.MockArm64Architecture, o: os.NewMock(os.WithArchitecture(os.MockArm64Architecture))},
+		{expected: os.MockArm64Architecture, o: os.NewMock(os.WithArchitecture(os.MockArm64Architecture))},
 	}
 	for i, test := range tests {
 		require.Equal(t, test.expected, test.o.Architecture(), "test [%d] failed", i)
@@ -56,13 +56,10 @@ func TestHome(t *testing.T) {
 		OtherHome = "/home/other"
 	)
 	tests := []test{
-		{expected: os.MockDarwinHomeDirectory, o: os.NewDarwinMock()},
-		{expected: os.MockLinuxHomeDirectory, o: os.NewLinuxMock()},
-		{expected: os.MockWindowsHomeDirectory, o: os.NewWindowsMock()},
+		{expected: os.MockUnixHomeDirectory, o: os.NewMock(os.WithPlatform(platform.Darwin))},
+		{expected: os.MockUnixHomeDirectory, o: os.NewMock(os.WithPlatform(platform.Linux))},
+		{expected: os.MockWindowsHomeDirectory, o: os.NewMock(os.WithPlatform(platform.Windows))},
 		{expected: OtherHome, o: os.NewMock(os.WithHomeDirectory(OtherHome))},
-		{expected: OtherHome, o: os.NewWindowsMock(os.WithHomeDirectory(OtherHome))},
-		{expected: OtherHome, o: os.NewLinuxMock(os.WithHomeDirectory(OtherHome))},
-		{expected: OtherHome, o: os.NewDarwinMock(os.WithHomeDirectory(OtherHome))},
 	}
 	for i, test := range tests {
 		require.Equal(t, test.expected, test.o.Home(), "test [%d] failed", i)
@@ -78,13 +75,13 @@ func TestWorkingDirectory(t *testing.T) {
 		OtherWorkingDirectory = "/home/other/wd"
 	)
 	tests := []test{
-		{expected: os.MockDarwinWorkingDirectory, o: os.NewDarwinMock()},
-		{expected: os.MockLinuxWorkingDirectory, o: os.NewLinuxMock()},
-		{expected: os.MockWindowsWorkingDirectory, o: os.NewWindowsMock()},
+		{expected: os.MockUnixWorkingDirectory, o: os.NewMock(os.WithPlatform(platform.Darwin))},
+		{expected: os.MockUnixWorkingDirectory, o: os.NewMock(os.WithPlatform(platform.Linux))},
+		{expected: os.MockWindowsWorkingDirectory, o: os.NewMock(os.WithPlatform(platform.Windows))},
 		{expected: OtherWorkingDirectory, o: os.NewMock(os.WithWorkingDirectory(OtherWorkingDirectory))},
-		{expected: OtherWorkingDirectory, o: os.NewWindowsMock(os.WithWorkingDirectory(OtherWorkingDirectory))},
-		{expected: OtherWorkingDirectory, o: os.NewLinuxMock(os.WithWorkingDirectory(OtherWorkingDirectory))},
-		{expected: OtherWorkingDirectory, o: os.NewDarwinMock(os.WithWorkingDirectory(OtherWorkingDirectory))},
+		{expected: OtherWorkingDirectory, o: os.NewMock(os.WithWorkingDirectory(OtherWorkingDirectory))},
+		{expected: OtherWorkingDirectory, o: os.NewMock(os.WithWorkingDirectory(OtherWorkingDirectory))},
+		{expected: OtherWorkingDirectory, o: os.NewMock(os.WithWorkingDirectory(OtherWorkingDirectory))},
 	}
 	for i, test := range tests {
 		workingDirectory, err := test.o.WorkingDirectory()

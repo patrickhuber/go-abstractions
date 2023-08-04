@@ -5,6 +5,7 @@ import (
 
 	"github.com/patrickhuber/go-xplat/filepath"
 	"github.com/patrickhuber/go-xplat/os"
+	"github.com/patrickhuber/go-xplat/platform"
 	"github.com/stretchr/testify/require"
 )
 
@@ -172,8 +173,8 @@ func TestRel(t *testing.T) {
 				name, i, test.source, test.target, test.expected, actual)
 		}
 	}
-	run(reltests, "reltests", os.NewLinuxMock())
-	run(winreltests, "winreltests", os.NewWindowsMock())
+	run(reltests, "reltests", os.NewMock(os.WithPlatform(platform.Linux)))
+	run(winreltests, "winreltests", os.NewMock(os.WithPlatform(platform.Windows)))
 }
 
 func TestClean(t *testing.T) {
@@ -285,9 +286,9 @@ func TestClean(t *testing.T) {
 		}
 	}
 
-	run(cleantests, "cleantests", os.NewLinuxMock())
-	run(nonwincleantests, "nonwincleantests", os.NewLinuxMock())
-	run(wincleantests, "wincleantests", os.NewWindowsMock())
+	run(cleantests, "cleantests", os.NewMock(os.WithPlatform(platform.Linux)))
+	run(nonwincleantests, "nonwincleantests", os.NewMock(os.WithPlatform(platform.Linux)))
+	run(wincleantests, "wincleantests", os.NewMock(os.WithPlatform(platform.Windows)))
 }
 
 func TestDir(t *testing.T) {
@@ -338,9 +339,9 @@ func TestDir(t *testing.T) {
 		}
 	}
 
-	run(dirtests, "dirtests", os.NewLinuxMock())
-	run(nonwindirtests, "nonwindirtests", os.NewLinuxMock())
-	run(windirtests, "windirtests", os.NewWindowsMock())
+	run(dirtests, "dirtests", os.NewMock(os.WithPlatform(platform.Linux)))
+	run(nonwindirtests, "nonwindirtests", os.NewMock(os.WithPlatform(platform.Linux)))
+	run(windirtests, "windirtests", os.NewMock(os.WithPlatform(platform.Windows)))
 }
 
 func TestExt(t *testing.T) {
@@ -400,8 +401,8 @@ func TestBase(t *testing.T) {
 				"%s[%d] given: '%s' expected: '%s' actual: '%s'", name, i, test.path, test.expected, actual)
 		}
 	}
-	run(basetests, "basetests", os.NewLinuxMock())
-	run(winbasetests, "winbasetests", os.NewWindowsMock())
+	run(basetests, "basetests", os.NewMock(os.WithPlatform(platform.Linux)))
+	run(winbasetests, "winbasetests", os.NewMock(os.WithPlatform(platform.Windows)))
 }
 
 func TestAbs(t *testing.T) {
@@ -437,7 +438,7 @@ func TestAbs(t *testing.T) {
 			}
 		})
 	}
-	run("abs_linux", absDirs, relPaths, os.NewLinuxMock())
-	run("abs_darwin", absDirs, relPaths, os.NewDarwinMock())
-	run("abs_windows", absDirs, relPaths, os.NewWindowsMock())
+	run("abs_linux", absDirs, relPaths, os.NewMock(os.WithPlatform(platform.Linux)))
+	run("abs_darwin", absDirs, relPaths, os.NewMock(os.WithPlatform(platform.Darwin)))
+	run("abs_windows", absDirs, relPaths, os.NewMock(os.WithPlatform(platform.Windows)))
 }

@@ -40,6 +40,12 @@ func NewTest(
 		os.WithPlatform(p))
 
 	path := filepath.NewProcessorWithOS(os)
+	if vars == nil {
+		vars = map[string]string{}
+	}
+	if args == nil {
+		args = []string{}
+	}
 	return &Host{
 		OS:      os,
 		Path:    path,

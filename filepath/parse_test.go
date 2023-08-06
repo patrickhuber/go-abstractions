@@ -163,7 +163,7 @@ func TestCanParse(t *testing.T) {
 		for _, test := range tests {
 			parser := filepath.NewParserWithPlatform(plat)
 			actual, err := parser.Parse(test.path)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.Equal(t, test.fp, actual, "unable to parse path '%s'", test.path)
 		}
 	}

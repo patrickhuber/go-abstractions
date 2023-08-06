@@ -88,7 +88,12 @@ func TestMemoryReadDir(t *testing.T) {
 				{"one.txt", []byte("one")},
 				{"two.txt", []byte("two")},
 				{"three.txt", []byte("three")},
-			})
+				{"sub/one.txt", []byte("one")},
+			}, []file{
+				{"one.txt", []byte("one")},
+				{"two.txt", []byte("two")},
+				{"three.txt", []byte("three")},
+				{"sub", []byte{}}})
 }
 
 func TestMemoryCanCreateFile(t *testing.T) {

@@ -85,7 +85,7 @@ func TestWorkingDirectory(t *testing.T) {
 	}
 	for i, test := range tests {
 		workingDirectory, err := test.o.WorkingDirectory()
-		require.Nil(t, err, "test [%d] o.WorkingDirectory() returned error")
+		require.NoError(t, err, "test [%d] o.WorkingDirectory() returned error")
 		require.Equal(t, test.expected, workingDirectory, "test [%d] failed", i)
 	}
 }

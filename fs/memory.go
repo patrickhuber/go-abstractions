@@ -240,8 +240,8 @@ func (m *memory) ReadDir(name string) ([]fs.DirEntry, error) {
 			continue
 		}
 
-		// any file will have the prefix of the path
-		if strings.HasPrefix(path, name) {
+		// is the file's the directory the same as the 
+		if m.processor.Dir(path) == name {
 
 			// get the file name
 			fileName := m.processor.Base(originalPath)

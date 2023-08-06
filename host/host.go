@@ -29,7 +29,11 @@ func New() *Host {
 	}
 }
 
-func NewTest(p platform.Platform, a arch.Arch) *Host {
+func NewTest(
+	p platform.Platform,
+	a arch.Arch,
+	vars map[string]string,
+	args []string) *Host {
 
 	os := os.NewMock(
 		os.WithArchitecture(a),
@@ -40,7 +44,7 @@ func NewTest(p platform.Platform, a arch.Arch) *Host {
 		OS:      os,
 		Path:    path,
 		FS:      fs.NewMemory(fs.WithProcessor(path)),
-		Env:     env.NewMemory(),
-		Console: console.NewMemory(),
+		Env:     env.NewMemoryWithMap(vars),
+		Console: console.NewMemory(console.WithArgs(args)),
 	}
 }

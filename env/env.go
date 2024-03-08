@@ -11,6 +11,7 @@ type Environment interface {
 	Lookup(key string) (string, bool)
 	Export() map[string]string
 	Environ() []string
+	Delete(key string) error
 }
 
 type env struct {
